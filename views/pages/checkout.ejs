@@ -1,0 +1,286 @@
+<%- include('../partials/head', { extraCss: ['checkout.css'] }) %>
+<%- include('../partials/header') %>
+
+<main class="main-content">
+  <div class="container">
+    <!-- Breadcrumbs -->
+    <nav class="breadcrumbs" aria-label="Хлебные крошки">
+      <a href="/">Главная</a>
+      <span class="breadcrumbs-sep">/</span>
+      <a href="/cart">Корзина</a>
+      <span class="breadcrumbs-sep">/</span>
+      <span class="breadcrumbs-current">Оформление заказа</span>
+    </nav>
+
+    <!-- Page Title -->
+    <div style="margin: 1rem 0 1.5rem;">
+      <h1 style="font-size: clamp(1.5rem, 3vw, 2.25rem); font-weight: 800;">
+        Оформление заказа
+      </h1>
+      <p style="color: var(--text-muted);">Быстрая доставка по Ташкенту и гарантия подлинности каждого устройства</p>
+    </div>
+
+    <!-- Form & Summary Grid -->
+    <form id="checkout-main-form" onsubmit="handlePlaceOrder(event)">
+      <div class="checkout-grid">
+        <!-- Left: Form Sections -->
+        <div class="checkout-form-column">
+          <!-- 1. Contacts -->
+          <div class="checkout-section-card">
+            <h3 class="checkout-section-title">
+              <span>👤</span> <span>1. Контактные данные</span>
+            </h3>
+            <div class="form-row-2">
+              <div class="form-group">
+                <label class="form-label" for="cust-name">Имя и фамилия *</label>
+                <input type="text" id="cust-name" class="form-input" placeholder="Азиз Каримов" required value="Азиз Каримов">
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="cust-phone">Номер телефона *</label>
+                <input type="tel" id="cust-phone" class="form-input" placeholder="+998 (90) 123-45-67" required value="+998 (90) 123-45-67">
+              </div>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="cust-email">Email для электронного чека</label>
+              <input type="email" id="cust-email" class="form-input" placeholder="aziz.karimov@example.uz" value="aziz.karimov@example.uz">
+            </div>
+          </div>
+
+          <!-- 2. Delivery Address in Tashkent -->
+          <div class="checkout-section-card">
+            <h3 class="checkout-section-title">
+              <span>📍</span> <span>2. Способ и адрес доставки в Ташкенте</span>
+            </h3>
+
+            <!-- Delivery Method Choice -->
+            <div class="form-group">
+              <label class="form-label">Выберите тип доставки:</label>
+              <div class="choice-cards-grid">
+                <label class="choice-card-label selected">
+                  <input type="radio" name="deliveryType" value="courier" class="choice-card-input" checked onchange="handleDeliveryChange(this.value)">
+                  <div class="choice-card-content">
+                    <div class="choice-card-title">🚀 Курьерская доставка</div>
+                    <div class="choice-card-desc">До двери по Ташкенту за 2–4 часа. Бесплатно от 500 000 UZS.</div>
+                  </div>
+                </label>
+                <label class="choice-card-label">
+                  <input type="radio" name="deliveryType" value="pickup" class="choice-card-input" onchange="handleDeliveryChange(this.value)">
+                  <div class="choice-card-content">
+                    <div class="choice-card-title">🏪 Самовывоз (Бесплатно)</div>
+                    <div class="choice-card-desc">Пункты выдачи: Юнусабад (ул. Амира Темура) или Чиланзар.</div>
+                  </div>
+                </label>
+              </div>
+            </div>
+
+            <div id="courier-address-block">
+              <div class="form-row-2">
+                <div class="form-group">
+                  <label class="form-label" for="deliv-district">Район города Ташкент *</label>
+                  <select id="deliv-district" class="form-select">
+                    <option value="Юнусабадский район" selected>Юнусабадский район</option>
+                    <option value="Мирзо-Улугбекский район">Мирзо-Улугбекский район</option>
+                    <option value="Чиланзарский район">Чиланзарский район</option>
+                    <option value="Яккасарайский район">Яккасарайский район</option>
+                    <option value="Шайхантахурский район">Шайхантахурский район</option>
+                    <option value="Мирабадский район">Мирабадский район</option>
+                    <option value="Сергелийский район">Сергелийский район</option>
+                    <option value="Учтепинский район">Учтепинский район</option>
+                    <option value="Алмазарский район">Алмазарский район</option>
+                    <option value="Яшнабадский район">Яшнабадский район</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label class="form-label" for="deliv-street">Улица и номер дома *</label>
+                  <input type="text" id="deliv-street" class="form-input" placeholder="ул. Амира Темура, 108" required value="ул. Амира Темура, 108">
+                </div>
+              </div>
+              <div class="form-row-2">
+                <div class="form-group">
+                  <label class="form-label" for="deliv-apt">Квартира / офис / этаж</label>
+                  <input type="text" id="deliv-apt" class="form-input" placeholder="кв. 14, 3 этаж" value="кв. 14, 3 этаж">
+                </div>
+                <div class="form-group">
+                  <label class="form-label" for="deliv-comment">Комментарий курьеру</label>
+                  <input type="text" id="deliv-comment" class="form-input" placeholder="Код домофона, ориентир">
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 3. Payment Method -->
+          <div class="checkout-section-card">
+            <h3 class="checkout-section-title">
+              <span>💳</span> <span>3. Способ оплаты</span>
+            </h3>
+            <div class="choice-cards-grid">
+              <label class="choice-card-label selected">
+                <input type="radio" name="paymentMethod" value="card_courier" class="choice-card-input" checked>
+                <div class="choice-card-content">
+                  <div class="choice-card-title">Uzcard / Humo при получении</div>
+                  <div class="choice-card-desc">Оплата через терминал курьеру после проверки товара.</div>
+                </div>
+              </label>
+              <label class="choice-card-label">
+                <input type="radio" name="paymentMethod" value="cash" class="choice-card-input">
+                <div class="choice-card-content">
+                  <div class="choice-card-title">Наличными при получении</div>
+                  <div class="choice-card-desc">Оплата наличными сумами в руки курьеру.</div>
+                </div>
+              </label>
+              <label class="choice-card-label">
+                <input type="radio" name="paymentMethod" value="online" class="choice-card-input">
+                <div class="choice-card-content">
+                  <div class="choice-card-title">Онлайн картой (Тестовый режим)</div>
+                  <div class="choice-card-desc">Тестовая оплата через защищенный платёжный шлюз.</div>
+                </div>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right: Summary Sidebar -->
+        <aside class="checkout-summary-column">
+          <div class="cart-summary-box">
+            <h3 class="summary-title">Ваш заказ</h3>
+
+            <!-- Mini List of Items -->
+            <div class="checkout-items-preview" id="checkout-mini-items">
+              <!-- Rendered by JS -->
+            </div>
+
+            <div class="summary-row" style="margin-top: 1rem; padding-top: 0.75rem; border-top: 1px solid var(--border);">
+              <span>Товары:</span>
+              <span id="checkout-subtotal">0 сум</span>
+            </div>
+
+            <div class="summary-row">
+              <span>Доставка по Ташкенту:</span>
+              <span id="checkout-delivery" style="color: var(--success);">Бесплатно</span>
+            </div>
+
+            <div class="summary-row total-row">
+              <span>Итого:</span>
+              <span class="total-value" id="checkout-total">0 сум</span>
+            </div>
+
+            <button type="submit" class="btn-checkout-cta" id="btn-submit-order">
+              <span>Подтвердить заказ</span>
+              <span>✓</span>
+            </button>
+
+            <div style="font-size: 0.75rem; color: var(--text-muted); text-align: center; margin-top: 1rem; line-height: 1.4;">
+              🔒 Нажимая «Подтвердить заказ», вы соглашаетесь с условиями пользовательского соглашения и гарантией подлинности.
+            </div>
+          </div>
+        </aside>
+      </div>
+    </form>
+  </div>
+</main>
+
+<script>
+  let deliveryType = 'courier';
+
+  function formatMoney(amount) {
+    return Math.round(amount).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ') + ' сум';
+  }
+
+  function handleDeliveryChange(val) {
+    deliveryType = val;
+    const block = document.getElementById('courier-address-block');
+    if (block) {
+      block.style.display = val === 'pickup' ? 'none' : 'block';
+    }
+    renderCheckoutSummary();
+  }
+
+  function renderCheckoutSummary() {
+    let cart = window.TashTech.getStored(window.TashTech.KEYS.CART_KEY);
+    const miniItems = document.getElementById('checkout-mini-items');
+    const subtotalEl = document.getElementById('checkout-subtotal');
+    const deliveryEl = document.getElementById('checkout-delivery');
+    const totalEl = document.getElementById('checkout-total');
+
+    // If cart is empty, provide 1 default item so user can demo checkout easily
+    if (!cart || cart.length === 0) {
+      cart = [
+        {
+          id: 'prod-1',
+          title: 'Apple iPhone 16 Pro Max 256GB Black Titanium',
+          price: 16900000,
+          quantity: 1
+        }
+      ];
+      window.TashTech.saveStored(window.TashTech.KEYS.CART_KEY, cart);
+      window.TashTech.updateBadges();
+    }
+
+    let subtotal = 0;
+    let html = '';
+    cart.forEach(item => {
+      const line = (item.price || 0) * (item.quantity || 1);
+      subtotal += line;
+      html += `
+        <div class="checkout-mini-item">
+          <span class="checkout-mini-item-name">${item.title} × ${item.quantity || 1}</span>
+          <span class="checkout-mini-item-price">${formatMoney(line)}</span>
+        </div>
+      `;
+    });
+
+    miniItems.innerHTML = html;
+    subtotalEl.textContent = formatMoney(subtotal);
+
+    const deliveryCost = (deliveryType === 'pickup' || subtotal >= 500000) ? 0 : 30000;
+    deliveryEl.innerHTML = deliveryCost === 0 ? '<strong style="color: var(--success);">Бесплатно</strong>' : formatMoney(deliveryCost);
+
+    const grandTotal = subtotal + deliveryCost;
+    totalEl.textContent = formatMoney(grandTotal);
+  }
+
+  function handlePlaceOrder(e) {
+    e.preventDefault();
+
+    const name = document.getElementById('cust-name').value;
+    const phone = document.getElementById('cust-phone').value;
+    const cart = window.TashTech.getStored(window.TashTech.KEYS.CART_KEY);
+
+    const orderNumber = 'TT-' + Math.floor(100000 + Math.random() * 900000);
+    let subtotal = 0;
+    cart.forEach(i => subtotal += (i.price || 0) * (i.quantity || 1));
+    const deliveryCost = (deliveryType === 'pickup' || subtotal >= 500000) ? 0 : 30000;
+    const totalUzs = subtotal + deliveryCost;
+
+    const newOrder = {
+      orderNumber,
+      date: new Date().toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' }),
+      status: 'pending',
+      statusText: 'В обработке (ожидает звонка оператора)',
+      totalUzs,
+      items: cart,
+      customerName: name,
+      customerPhone: phone,
+      deliveryType: deliveryType === 'courier' ? 'Доставка курьером по Ташкенту' : 'Самовывоз',
+      paymentMethod: document.querySelector('input[name="paymentMethod"]:checked').value
+    };
+
+    // Save to user orders list in localStorage
+    const pastOrders = window.TashTech.getStored('tashtech_orders') || [];
+    pastOrders.unshift(newOrder);
+    window.TashTech.saveStored('tashtech_orders', pastOrders);
+
+    // Empty cart
+    window.TashTech.saveStored(window.TashTech.KEYS.CART_KEY, []);
+    window.TashTech.updateBadges();
+
+    // Redirect to success page
+    window.location.href = `/checkout/success?orderNumber=${orderNumber}&total=${totalUzs}`;
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    renderCheckoutSummary();
+  });
+</script>
+
+<%- include('../partials/footer') %>

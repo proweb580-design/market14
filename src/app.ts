@@ -3,6 +3,8 @@ import path from 'path';
 import { homeRouter } from './routes/home.routes';
 import { catalogRouter } from './routes/catalog.routes';
 import { shopRouter } from './routes/shop.routes';
+import { checkoutRouter } from './routes/checkout.routes';
+import { authRouter } from './routes/auth.routes';
 import { config } from './config/env';
 
 export const app = express();
@@ -28,6 +30,8 @@ app.use((req: Request, res: Response, next: NextFunction) => {
 app.use('/', homeRouter);
 app.use('/', catalogRouter);
 app.use('/', shopRouter);
+app.use('/', checkoutRouter);
+app.use('/', authRouter);
 
 // 404 handler
 app.use((req: Request, res: Response) => {

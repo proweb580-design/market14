@@ -1,0 +1,201 @@
+<%- include('../partials/head', { extraCss: ['account.css'] }) %>
+<%- include('../partials/header') %>
+
+<main class="main-content">
+  <div class="container">
+    <!-- Breadcrumbs -->
+    <nav class="breadcrumbs" aria-label="Хлебные крошки">
+      <a href="/">Главная</a>
+      <span class="breadcrumbs-sep">/</span>
+      <span class="breadcrumbs-current">Личный кабинет</span>
+    </nav>
+
+    <!-- User Header Profile Card -->
+    <div class="account-header-card">
+      <div class="account-user-meta">
+        <div class="account-avatar">
+          <%= user.name.split(' ').map(w => w[0]).join('') %>
+        </div>
+        <div class="account-name-block">
+          <h2><%= user.name %></h2>
+          <p><%= user.email %> • <%= user.phone %></p>
+          <span style="font-size: 0.75rem; color: var(--accent-cyan);">г. <%= user.city %></span>
+        </div>
+      </div>
+      <div>
+        <a href="/logout" class="btn btn-secondary" style="padding: 0.5rem 1rem; font-size: 0.8125rem;">
+          <span>🚪 Выйти</span>
+        </a>
+      </div>
+    </div>
+
+    <!-- Navigation Tabs -->
+    <div class="account-tabs-nav">
+      <button type="button" class="acc-tab-btn active" onclick="switchAccountTab('orders', this)">
+        📦 Мои заказы
+      </button>
+      <button type="button" class="acc-tab-btn" onclick="switchAccountTab('profile', this)">
+        👤 Личные данные
+      </button>
+      <button type="button" class="acc-tab-btn" onclick="switchAccountTab('addresses', this)">
+        📍 Адреса доставки (Ташкент)
+      </button>
+    </div>
+
+    <!-- Tab 1: Orders Tab -->
+    <div class="acc-tab-content active" id="acc-tab-orders">
+      <div class="orders-list" id="account-orders-container">
+        <!-- Merged list of demoOrders + localStorage orders -->
+        <% demoOrders.forEach(function(order) { %>
+          <div class="order-card">
+            <div class="order-card-header">
+              <div class="order-num-block">
+                <span class="order-num"><%= order.orderNumber %></span>
+                <span class="order-date"><%= order.date %></span>
+              </div>
+              <span class="order-status-badge status-delivered">
+                ● <%= order.statusText %>
+              </span>
+            </div>
+
+            <div class="order-items-preview-list">
+              <% order.items.forEach(function(item) { %>
+                <div class="order-preview-item">
+                  <div class="order-item-left">
+                    <img src="<%= item.image %>" alt="<%= item.title %>" class="order-item-img">
+                    <div>
+                      <div class="order-item-title"><%= item.title %></div>
+                      <div class="order-item-qty">Количество: <%= item.quantity %> шт.</div>
+                    </div>
+                  </div>
+                  <div class="order-item-price"><%= formatUzs(item.priceUzs * item.quantity) %></div>
+                </div>
+              <% }); %>
+            </div>
+
+            <div class="order-card-footer">
+              <div>
+                📍 <strong>Адрес:</strong> <%= order.deliveryAddress %><br>
+                💳 <strong>Оплата:</strong> <%= order.paymentMethod %>
+              </div>
+              <div>
+                Сумма заказа: <span class="order-total-amount"><%= formatUzs(order.totalUzs) %></span>
+              </div>
+            </div>
+          </div>
+        <% }); %>
+      </div>
+    </div>
+
+    <!-- Tab 2: Profile Settings -->
+    <div class="acc-tab-content" id="acc-tab-profile" style="display: none;">
+      <div class="checkout-section-card" style="max-width: 600px;">
+        <h3 class="checkout-section-title">Персональные данные</h3>
+        <form onsubmit="event.preventDefault(); window.TashTech.showToast('Данные успешно сохранены!', 'success');">
+          <div class="form-group">
+            <label class="form-label">Имя и фамилия</label>
+            <input type="text" class="form-input" value="<%= user.name %>">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Email</label>
+            <input type="email" class="form-input" value="<%= user.email %>">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Номер телефона</label>
+            <input type="tel" class="form-input" value="<%= user.phone %>">
+          </div>
+          <button type="submit" class="btn btn-primary" style="margin-top: 1rem;">
+            Сохранить изменения
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Tab 3: Saved Addresses -->
+    <div class="acc-tab-content" id="acc-tab-addresses" style="display: none;">
+      <div class="checkout-section-card" style="max-width: 600px;">
+        <h3 class="checkout-section-title">Сохранённые адреса в Ташкенте</h3>
+        <div style="background: var(--surface-raised); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 1rem; margin-bottom: 1rem;">
+          <div style="font-weight: 700; margin-bottom: 0.25rem;">🏠 Дом (Основной)</div>
+          <div style="font-size: 0.875rem; color: var(--text-secondary);">
+            г. Ташкент, Юнусабадский район, 4-й квартал, дом 18, кв. 42
+          </div>
+        </div>
+        <div style="background: var(--surface-raised); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 1rem;">
+          <div style="font-weight: 700; margin-bottom: 0.25rem;">🏢 Работа / Офис</div>
+          <div style="font-size: 0.875rem; color: var(--text-secondary);">
+            г. Ташкент, Мирзо-Улугбекский район, пр. Мустакиллик, БЦ «Пойтахт», 5 этаж
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<script>
+  function switchAccountTab(tabName, btn) {
+    document.querySelectorAll('.acc-tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.acc-tab-content').forEach(c => c.style.display = 'none');
+
+    if (btn) btn.classList.add('active');
+    const target = document.getElementById('acc-tab-' + tabName);
+    if (target) target.style.display = 'block';
+  }
+
+  // Prepend any new user orders placed during the session in LocalStorage
+  document.addEventListener('DOMContentLoaded', () => {
+    const orders = window.TashTech.getStored('tashtech_orders') || [];
+    const container = document.getElementById('account-orders-container');
+
+    if (orders.length > 0 && container) {
+      let extraHtml = '';
+      orders.forEach(o => {
+        let itemsHtml = '';
+        (o.items || []).forEach(item => {
+          itemsHtml += `
+            <div class="order-preview-item">
+              <div class="order-item-left">
+                <img src="${item.image || 'https://images.unsplash.com/photo-1592750475338-74b7b21085ab?w=300&auto=format&fit=crop&q=80'}" alt="${item.title}" class="order-item-img">
+                <div>
+                  <div class="order-item-title">${item.title}</div>
+                  <div class="order-item-qty">Количество: ${item.quantity || 1} шт.</div>
+                </div>
+              </div>
+              <div class="order-item-price">${((item.price || 0) * (item.quantity || 1)).toLocaleString('ru-RU')} сум</div>
+            </div>
+          `;
+        });
+
+        extraHtml += `
+          <div class="order-card" style="border-color: var(--border-accent);">
+            <div class="order-card-header">
+              <div class="order-num-block">
+                <span class="order-num">${o.orderNumber}</span>
+                <span class="order-date">${o.date} (Только что)</span>
+              </div>
+              <span class="order-status-badge status-pending">
+                ● ${o.statusText || 'В обработке'}
+              </span>
+            </div>
+            <div class="order-items-preview-list">
+              ${itemsHtml}
+            </div>
+            <div class="order-card-footer">
+              <div>
+                📍 <strong>Адрес:</strong> ${o.deliveryType}<br>
+                💳 <strong>Оплата:</strong> ${o.paymentMethod}
+              </div>
+              <div>
+                Сумма заказа: <span class="order-total-amount">${Number(o.totalUzs).toLocaleString('ru-RU')} сум</span>
+              </div>
+            </div>
+          </div>
+        `;
+      });
+
+      container.insertAdjacentHTML('afterbegin', extraHtml);
+    }
+  });
+</script>
+
+<%- include('../partials/footer') %>

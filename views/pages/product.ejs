@@ -1,0 +1,267 @@
+<%- include('../partials/head', { extraCss: ['product.css'] }) %>
+<%- include('../partials/header') %>
+
+<main class="main-content">
+  <div class="container">
+    <!-- Breadcrumbs -->
+    <nav class="breadcrumbs" aria-label="Хлебные крошки">
+      <a href="/">Главная</a>
+      <span class="breadcrumbs-sep">/</span>
+      <a href="/catalog">Каталог</a>
+      <span class="breadcrumbs-sep">/</span>
+      <a href="/catalog?cat=<%= product.categoryId %>"><%= product.categoryName %></a>
+      <span class="breadcrumbs-sep">/</span>
+      <span class="breadcrumbs-current"><%= product.name %></span>
+    </nav>
+
+    <!-- Product Main Detail Block -->
+    <div class="product-detail-layout">
+      <!-- 1. Left Gallery -->
+      <div class="product-gallery">
+        <div class="gallery-main-wrap" id="gallery-main-container">
+          <img 
+            src="<%= product.images && product.images[0] ? product.images[0] : '' %>" 
+            alt="<%= product.name %>" 
+            class="gallery-main-img" 
+            id="gallery-current-image"
+          >
+        </div>
+
+        <!-- Thumbnails -->
+        <% if (product.images && product.images.length > 1) { %>
+          <div class="gallery-thumbs-row">
+            <% product.images.forEach(function(imgUrl, index) { %>
+              <button 
+                type="button" 
+                class="gallery-thumb <%= index === 0 ? 'active' : '' %>" 
+                onclick="changeProductImage('<%= imgUrl %>', this)"
+                aria-label="Изображение <%= index + 1 %>"
+              >
+                <img src="<%= imgUrl %>" alt="<%= product.name %> фото <%= index + 1 %>">
+              </button>
+            <% }); %>
+          </div>
+        <% } %>
+      </div>
+
+      <!-- 2. Right Info & Purchase Column -->
+      <div class="product-info-wrap">
+        <div class="product-info-header">
+          <span class="product-brand-tag"><%= product.brand %></span>
+          <h1 class="product-detail-title"><%= product.name %></h1>
+          
+          <div class="product-ratings-row">
+            <span class="rating-stars">★ <%= product.rating.toFixed(1) %></span>
+            <span class="reviews-link"><%= product.reviewsCount %> отзывов</span>
+            <span class="sku-info">Артикул: <%= product.id %></span>
+          </div>
+        </div>
+
+        <!-- Purchase Box -->
+        <div class="product-purchase-box">
+          <div class="purchase-price-row">
+            <span class="detail-current-price"><%= formatUzs(product.priceUzs) %></span>
+            <% if (product.oldPriceUzs && product.oldPriceUzs > product.priceUzs) { %>
+              <span class="detail-old-price"><%= formatUzs(product.oldPriceUzs) %></span>
+              <span class="detail-discount-tag">Скидка</span>
+            <% } %>
+          </div>
+
+          <div class="purchase-stock-indicator">
+            <span>В наличии на складе в Ташкенте (<%= product.stock %> шт.) — доставка от 2 часов</span>
+          </div>
+
+          <!-- Quantity Stepper & Add To Cart Button -->
+          <div class="purchase-actions-row">
+            <div class="quantity-stepper">
+              <button type="button" class="stepper-btn" onclick="stepQuantity(-1)">−</button>
+              <input type="text" id="product-quantity-input" class="stepper-input" value="1" readonly>
+              <button type="button" class="stepper-btn" onclick="stepQuantity(1)">+</button>
+            </div>
+
+            <button 
+              type="button" 
+              class="btn-detail-add-cart" 
+              id="btn-detail-add"
+              onclick="addCurrentProductToCart()"
+            >
+              <span>🛒</span>
+              <span>Добавить в корзину</span>
+            </button>
+          </div>
+
+          <!-- Quick Actions: Favorite & Compare -->
+          <div class="detail-secondary-actions">
+            <button 
+              type="button" 
+              class="detail-action-link-btn" 
+              data-action="favorite" 
+              data-id="<%= product.id %>" 
+              data-title="<%= product.name %>"
+            >
+              <span>❤️</span> <span>В избранное</span>
+            </button>
+            <button 
+              type="button" 
+              class="detail-action-link-btn" 
+              data-action="compare" 
+              data-id="<%= product.id %>" 
+              data-title="<%= product.name %>"
+            >
+              <span>⚖️</span> <span>Сравнить</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Benefits in Tashkent -->
+        <ul class="product-benefits-list">
+          <li class="product-benefit-item">
+            <span class="product-benefit-icon">🚚</span>
+            <div>
+              <strong>Экспресс-доставка по Ташкенту</strong><br>
+              <span style="color: var(--text-muted);">Привезём сегодня за 2–4 часа</span>
+            </div>
+          </li>
+          <li class="product-benefit-item">
+            <span class="product-benefit-icon">🛡️</span>
+            <div>
+              <strong>12 месяцев официальной гарантии</strong><br>
+              <span style="color: var(--text-muted);">Сервисное обслуживание в авторизованных СЦ</span>
+            </div>
+          </li>
+          <li class="product-benefit-item">
+            <span class="product-benefit-icon">💳</span>
+            <div>
+              <strong>Оплата при получении</strong><br>
+              <span style="color: var(--text-muted);">Uzcard, Humo, Visa или наличными</span>
+            </div>
+          </li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- Product Tabs: Specs & Description -->
+    <div class="product-content-tabs">
+      <div class="tabs-nav">
+        <button type="button" class="tab-btn active" onclick="switchTab('specs', this)">Характеристики</button>
+        <button type="button" class="tab-btn" onclick="switchTab('desc', this)">Описание</button>
+        <button type="button" class="tab-btn" onclick="switchTab('delivery', this)">Доставка и оплата</button>
+      </div>
+
+      <!-- Tab 1: Specs -->
+      <div class="tab-pane active" id="tab-specs">
+        <table class="specs-table">
+          <tbody>
+            <tr>
+              <td class="spec-name">Бренд</td>
+              <td class="spec-value"><%= product.brand %></td>
+            </tr>
+            <tr>
+              <td class="spec-name">Категория</td>
+              <td class="spec-value"><%= product.categoryName %></td>
+            </tr>
+            <% if (product.attributes && product.attributes.length > 0) { %>
+              <% product.attributes.forEach(function(attr) { %>
+                <tr>
+                  <td class="spec-name"><%= attr.name %></td>
+                  <td class="spec-value"><%= attr.value %><%= attr.unit ? ' ' + attr.unit : '' %></td>
+                </tr>
+              <% }); %>
+            <% } %>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Tab 2: Description -->
+      <div class="tab-pane" id="tab-desc">
+        <div style="font-size: 1rem; line-height: 1.8; color: var(--text-secondary); max-width: 800px;">
+          <p style="margin-bottom: 1rem;"><%= product.description %></p>
+          <p>
+            Все устройства проходят строгий контроль подлинности перед отправкой со склада в Ташкенте. Поставляются в оригинальной запечатанной заводской упаковке.
+          </p>
+        </div>
+      </div>
+
+      <!-- Tab 3: Delivery -->
+      <div class="tab-pane" id="tab-delivery">
+        <div style="font-size: 0.9375rem; line-height: 1.8; color: var(--text-secondary); max-width: 800px;">
+          <h4 style="color: var(--text); margin-bottom: 0.75rem;">Условия доставки в городе Ташкент:</h4>
+          <p style="margin-bottom: 1rem;">
+            • Стандартная доставка: <strong>Бесплатно</strong> при заказе от 500 000 UZS.<br>
+            • Срочная доставка (до 2 часов): 30 000 UZS курьерской службой TashTech.<br>
+            • Самовывоз: бесплатно из пунктов выдачи на Юнусабаде и Чиланзаре.
+          </p>
+          <h4 style="color: var(--text); margin-bottom: 0.75rem;">Способы оплаты:</h4>
+          <p>
+            • Наличными курьеру при проверке товара.<br>
+            • Терминалом через национальные карты Uzcard / Humo при получении.<br>
+            • Онлайн-оплата через безопасный шлюз.
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Related Products -->
+    <% if (relatedProducts && relatedProducts.length > 0) { %>
+      <section class="products-section" style="margin-top: 4rem;">
+        <div class="section-header">
+          <h2>Похожие товары в этой категории</h2>
+          <a href="/catalog?cat=<%= product.categoryId %>">Смотреть все →</a>
+        </div>
+        <div class="products-grid">
+          <% relatedProducts.forEach(function(relProduct) { %>
+            <%- include('../partials/product-card', { product: relProduct, formatUzs: formatUzs }) %>
+          <% }); %>
+        </div>
+      </section>
+    <% } %>
+  </div>
+</main>
+
+<script>
+  // Image switcher
+  function changeProductImage(src, btn) {
+    const mainImg = document.getElementById('gallery-current-image');
+    if (mainImg) mainImg.src = src;
+    document.querySelectorAll('.gallery-thumb').forEach(b => b.classList.remove('active'));
+    if (btn) btn.classList.add('active');
+  }
+
+  // Quantity stepper
+  function stepQuantity(delta) {
+    const input = document.getElementById('product-quantity-input');
+    if (!input) return;
+    let val = parseInt(input.value, 10) || 1;
+    val += delta;
+    if (val < 1) val = 1;
+    if (val > <%= product.stock %>) val = <%= product.stock %>;
+    input.value = val;
+  }
+
+  // Add with quantity
+  function addCurrentProductToCart() {
+    const qtyInput = document.getElementById('product-quantity-input');
+    const qty = parseInt(qtyInput ? qtyInput.value : 1, 10) || 1;
+    
+    for (let i = 0; i < qty; i++) {
+      window.TashTech.addToCart(
+        '<%= product.id %>',
+        <%- JSON.stringify(product.name) %>,
+        <%= product.priceUzs %>,
+        '<%= product.images && product.images[0] ? product.images[0] : "" %>'
+      );
+    }
+  }
+
+  // Tab switching
+  function switchTab(tabId, btn) {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+    
+    if (btn) btn.classList.add('active');
+    const target = document.getElementById('tab-' + tabId);
+    if (target) target.classList.add('active');
+  }
+</script>
+
+<%- include('../partials/footer') %>

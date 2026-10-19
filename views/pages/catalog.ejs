@@ -1,0 +1,206 @@
+<%- include('../partials/head', { extraCss: ['catalog.css'] }) %>
+<%- include('../partials/header') %>
+
+<main class="main-content">
+  <div class="container">
+    <!-- Breadcrumbs -->
+    <nav class="breadcrumbs" aria-label="Хлебные крошки">
+      <a href="/">Главная</a>
+      <span class="breadcrumbs-sep">/</span>
+      <% if (currentCategory) { %>
+        <a href="/catalog">Каталог</a>
+        <span class="breadcrumbs-sep">/</span>
+        <span class="breadcrumbs-current"><%= currentCategory.name %></span>
+      <% } else { %>
+        <span class="breadcrumbs-current">Каталог</span>
+      <% } %>
+    </nav>
+
+    <!-- Page Title -->
+    <div class="catalog-header-section">
+      <div class="catalog-title-wrap">
+        <h1><%= currentCategory ? currentCategory.name : 'Каталог техники' %></h1>
+        <span class="catalog-count-badge">Найдено: <%= products.length %> товаров</span>
+      </div>
+    </div>
+
+    <!-- Catalog Main Layout -->
+    <div class="catalog-layout">
+      <!-- 1. Sidebar Filters -->
+      <aside class="catalog-sidebar">
+        <form action="/catalog" method="GET" id="catalog-filter-form">
+          <!-- Preserved query -->
+          <% if (searchQuery) { %>
+            <input type="hidden" name="q" value="<%= searchQuery %>">
+          <% } %>
+
+          <div class="sidebar-header">
+            <h3>
+              <span>⚡</span> <span>Фильтры</span>
+            </h3>
+            <a href="/catalog" class="btn-reset-filters">Сбросить</a>
+          </div>
+
+          <!-- Categories Filter -->
+          <div class="filter-group">
+            <h4 class="filter-group-title">Категории</h4>
+            <ul class="filter-categories-list">
+              <li class="filter-category-item <%= !activeCat ? 'active' : '' %>">
+                <a href="/catalog<%= searchQuery ? '?q=' + encodeURIComponent(searchQuery) : '' %>">
+                  <span>Все категории</span>
+                </a>
+              </li>
+              <% categories.forEach(function(cat) { %>
+                <li class="filter-category-item <%= activeCat === cat.slug ? 'active' : '' %>">
+                  <a href="/catalog?cat=<%= cat.slug %><%= searchQuery ? '&q=' + encodeURIComponent(searchQuery) : '' %>">
+                    <span><%= cat.icon %> <%= cat.name %></span>
+                  </a>
+                </li>
+              <% }); %>
+            </ul>
+            <% if (activeCat) { %>
+              <input type="hidden" name="cat" value="<%= activeCat %>">
+            <% } %>
+          </div>
+
+          <!-- Brands Filter -->
+          <div class="filter-group">
+            <h4 class="filter-group-title">Бренд</h4>
+            <div class="filter-brands-list">
+              <% brands.forEach(function(brandName) { %>
+                <label class="filter-checkbox-label">
+                  <input 
+                    type="radio" 
+                    name="brand" 
+                    value="<%= brandName %>" 
+                    class="filter-checkbox"
+                    <%= activeBrand.toLowerCase() === brandName.toLowerCase() ? 'checked' : '' %>
+                    onchange="document.getElementById('catalog-filter-form').submit()"
+                  >
+                  <span><%= brandName %></span>
+                </label>
+              <% }); %>
+            </div>
+          </div>
+
+          <!-- Price Range Filter -->
+          <div class="filter-group">
+            <h4 class="filter-group-title">Цена (UZS)</h4>
+            <div class="price-inputs-row">
+              <div class="price-input-wrap">
+                <input 
+                  type="number" 
+                  name="minPrice" 
+                  placeholder="От" 
+                  value="<%= minPrice %>" 
+                  class="price-input-field"
+                >
+              </div>
+              <div class="price-input-wrap">
+                <input 
+                  type="number" 
+                  name="maxPrice" 
+                  placeholder="До" 
+                  value="<%= maxPrice %>" 
+                  class="price-input-field"
+                >
+              </div>
+            </div>
+            <button type="submit" class="btn-apply-price">Применить цену</button>
+          </div>
+
+          <!-- In Stock Filter -->
+          <div class="filter-group">
+            <label class="filter-checkbox-label" style="font-weight: 600; color: var(--text);">
+              <input 
+                type="checkbox" 
+                name="inStock" 
+                value="1" 
+                class="filter-checkbox"
+                <%= inStockOnly ? 'checked' : '' %>
+                onchange="document.getElementById('catalog-filter-form').submit()"
+              >
+              <span>Только в наличии в Ташкенте</span>
+            </label>
+          </div>
+        </form>
+      </aside>
+
+      <!-- 2. Main Content Area -->
+      <section class="catalog-main">
+        <!-- Toolbar -->
+        <div class="catalog-toolbar">
+          <div class="active-filters-badges">
+            <% if (searchQuery) { %>
+              <div class="active-filter-pill">
+                <span>Поиск: «<%= searchQuery %>»</span>
+                <a href="/catalog<%= activeCat ? '?cat=' + activeCat : '' %>" title="Очистить поиск">✕</a>
+              </div>
+            <% } %>
+
+            <% if (activeBrand) { %>
+              <div class="active-filter-pill">
+                <span>Бренд: <%= activeBrand %></span>
+                <a href="/catalog<%= activeCat ? '?cat=' + activeCat : '' %><%= searchQuery ? '&q=' + encodeURIComponent(searchQuery) : '' %>" title="Сбросить бренд">✕</a>
+              </div>
+            <% } %>
+
+            <% if (inStockOnly) { %>
+              <div class="active-filter-pill">
+                <span>Только в наличии</span>
+                <a href="/catalog<%= activeCat ? '?cat=' + activeCat : '' %>" title="Снять фильтр">✕</a>
+              </div>
+            <% } %>
+          </div>
+
+          <!-- Sort Dropdown -->
+          <div class="sort-wrapper">
+            <label for="catalog-sort-select" class="sort-label">Сортировка:</label>
+            <select 
+              id="catalog-sort-select" 
+              class="sort-select"
+              onchange="location.href = updateUrlParameter(window.location.href, 'sort', this.value)"
+            >
+              <option value="recommended" <%= activeSort === 'recommended' ? 'selected' : '' %>>По популярности</option>
+              <option value="cheaper" <%= activeSort === 'cheaper' ? 'selected' : '' %>>Сначала дешевле</option>
+              <option value="expensive" <%= activeSort === 'expensive' ? 'selected' : '' %>>Сначала дороже</option>
+              <option value="new" <%= activeSort === 'new' ? 'selected' : '' %>>Новинки</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Products Grid or Empty State -->
+        <% if (products.length > 0) { %>
+          <div class="products-grid">
+            <% products.forEach(function(product) { %>
+              <%- include('../partials/product-card', { product: product, formatUzs: formatUzs }) %>
+            <% }); %>
+          </div>
+        <% } else { %>
+          <div class="catalog-empty-state">
+            <div class="catalog-empty-icon">🔍</div>
+            <h3>Ничего не найдено</h3>
+            <p>
+              По выбранным фильтрам товары не найдены. Попробуйте сбросить параметры или изменить поисковый запрос.
+            </p>
+            <a href="/catalog" class="btn btn-primary">Сбросить все фильтры</a>
+          </div>
+        <% } %>
+      </section>
+    </div>
+  </div>
+</main>
+
+<script>
+  function updateUrlParameter(url, param, value) {
+    const regex = new RegExp('([?&])' + param + '=.*?(&|$)', 'i');
+    const separator = url.indexOf('?') !== -1 ? '&' : '?';
+    if (url.match(regex)) {
+      return url.replace(regex, '$1' + param + '=' + value + '$2');
+    } else {
+      return url + separator + param + '=' + value;
+    }
+  }
+</script>
+
+<%- include('../partials/footer') %>

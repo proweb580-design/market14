@@ -1,6 +1,7 @@
 import express, { Request, Response, NextFunction } from 'express';
 import path from 'path';
 import { homeRouter } from './routes/home.routes';
+import { catalogRouter } from './routes/catalog.routes';
 import { config } from './config/env';
 
 export const app = express();
@@ -24,6 +25,7 @@ app.use((req: Request, res: Response, next: NextFunction) => {
 
 // Routes
 app.use('/', homeRouter);
+app.use('/', catalogRouter);
 
 // 404 handler
 app.use((req: Request, res: Response) => {

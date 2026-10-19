@@ -1,0 +1,179 @@
+<%- include('../partials/head', { extraCss: ['home.css'] }) %>
+<%- include('../partials/header') %>
+
+<main class="main-content">
+  <!-- 1. Hero Bento Section -->
+  <section class="hero-bento">
+    <div class="container">
+      <div class="bento-grid">
+        <!-- Big Bento Card -->
+        <div class="bento-card-main">
+          <div class="bento-card-main-content">
+            <div class="bento-tag">
+              <span>🔥</span> <span>Флагманы 2025 года в Ташкенте</span>
+            </div>
+            <h1>Технологии будущего уже здесь</h1>
+            <p>
+              Новые iPhone 16 Pro, MacBook M3 и флагманы Samsung с официальной гарантией. Экспресс-доставка по Ташкенту за 2 часа прямо до двери.
+            </p>
+            <div class="bento-main-actions">
+              <a href="/catalog" class="btn btn-primary" id="hero-btn-catalog">
+                <span>Перейти в каталог</span>
+                <span>→</span>
+              </a>
+              <a href="/catalog?sort=new" class="btn btn-secondary" id="hero-btn-new">
+                <span>Смотреть новинки</span>
+              </a>
+            </div>
+          </div>
+        </div>
+
+        <!-- Bento Side Cards Column -->
+        <div class="bento-side-column">
+          <!-- Bento Small Card 1 -->
+          <div class="bento-card-small">
+            <div class="bento-small-info">
+              <div class="bento-tag" style="padding: 0.2rem 0.6rem; font-size: 0.6875rem; margin-bottom: 0.5rem;">
+                💻 Профессионалам
+              </div>
+              <h3>MacBook & Ноутбуки</h3>
+              <p>Для программирования, 3D и видеомонтажа</p>
+              <a href="/catalog?cat=laptops" class="bento-link">
+                <span>В категорию</span>
+                <span>→</span>
+              </a>
+            </div>
+            <img 
+              src="https://images.unsplash.com/photo-1517336714731-489689fd1ca8?w=300&auto=format&fit=crop&q=80" 
+              alt="MacBook Pro"
+              class="bento-small-thumb"
+            >
+          </div>
+
+          <!-- Bento Small Card 2 -->
+          <div class="bento-card-small">
+            <div class="bento-small-info">
+              <div class="bento-tag" style="padding: 0.2rem 0.6rem; font-size: 0.6875rem; margin-bottom: 0.5rem; color: var(--accent);">
+                🎧 Премиальный звук
+              </div>
+              <h3>Hi-Fi Наушники и TWS</h3>
+              <p>Шумоподавление и кристальная чистота</p>
+              <a href="/catalog?cat=audio" class="bento-link">
+                <span>Выбрать аудио</span>
+                <span>→</span>
+              </a>
+            </div>
+            <img 
+              src="https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=300&auto=format&fit=crop&q=80" 
+              alt="Sony WH-1000XM5"
+              class="bento-small-thumb"
+            >
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 2. Trust & Advantages Bar -->
+  <section class="trust-bar">
+    <div class="container">
+      <div class="trust-grid">
+        <div class="trust-card">
+          <div class="trust-icon">⚡</div>
+          <div class="trust-text">
+            <h4>Быстрая доставка</h4>
+            <p>По Ташкенту от 2 часов в день заказа</p>
+          </div>
+        </div>
+        <div class="trust-card">
+          <div class="trust-icon">🛡️</div>
+          <div class="trust-text">
+            <h4>Официальная гарантия</h4>
+            <p>12 месяцев на все устройства в СЦ</p>
+          </div>
+        </div>
+        <div class="trust-card">
+          <div class="trust-icon">💰</div>
+          <div class="trust-text">
+            <h4>Честные цены в UZS</h4>
+            <p>Без скрытых наценок и переплат</p>
+          </div>
+        </div>
+        <div class="trust-card">
+          <div class="trust-icon">💳</div>
+          <div class="trust-text">
+            <h4>Удобная оплата</h4>
+            <p>Uzcard, Humo или наличными курьеру</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 3. Popular Categories Section -->
+  <section class="categories-section">
+    <div class="container">
+      <div class="section-header">
+        <h2>Популярные категории</h2>
+        <a href="/catalog">Весь каталог →</a>
+      </div>
+      <div class="category-cards-grid">
+        <% categories.forEach(function(cat) { %>
+          <a href="/catalog?cat=<%= cat.slug %>" class="category-card" id="cat-card-<%= cat.slug %>">
+            <div class="category-icon-bubble">
+              <%= cat.icon %>
+            </div>
+            <h3><%= cat.name %></h3>
+            <span><%= cat.itemCount %> моделей</span>
+          </a>
+        <% }); %>
+      </div>
+    </div>
+  </section>
+
+  <!-- 4. Featured / Hit Products Section -->
+  <section class="products-section">
+    <div class="container">
+      <div class="section-header">
+        <h2>🔥 Хиты продаж в Ташкенте</h2>
+        <a href="/catalog?sort=recommended">Все рекомендуемые →</a>
+      </div>
+      <div class="products-grid">
+        <% featured.forEach(function(product) { %>
+          <%- include('../partials/product-card', { product: product, formatUzs: formatUzs }) %>
+        <% }); %>
+      </div>
+    </div>
+  </section>
+
+  <!-- 5. Brands Strip -->
+  <section class="brands-strip">
+    <div class="container">
+      <ul class="brands-list">
+        <li class="brand-badge-item">Apple</li>
+        <li class="brand-badge-item">Samsung</li>
+        <li class="brand-badge-item">Sony</li>
+        <li class="brand-badge-item">Xiaomi</li>
+        <li class="brand-badge-item">ASUS ROG</li>
+        <li class="brand-badge-item">Anker Prime</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- 6. New Arrivals Section -->
+  <section class="products-section">
+    <div class="container">
+      <div class="section-header">
+        <h2>✨ Новые поступления</h2>
+        <a href="/catalog?sort=new">Смотреть все новинки →</a>
+      </div>
+      <div class="products-grid">
+        <% newArrivals.forEach(function(product) { %>
+          <%- include('../partials/product-card', { product: product, formatUzs: formatUzs }) %>
+        <% }); %>
+      </div>
+    </div>
+  </section>
+</main>
+
+<%- include('../partials/footer') %>

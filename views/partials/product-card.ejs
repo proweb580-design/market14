@@ -1,0 +1,86 @@
+<div class="product-card" data-product-id="<%= product.id %>">
+  <!-- Badges -->
+  <div class="product-card-badges">
+    <% if (product.isNew) { %>
+      <span class="badge badge-new">New</span>
+    <% } %>
+    <% if (product.isHot) { %>
+      <span class="badge badge-hot">Hot</span>
+    <% } %>
+    <% if (product.oldPriceUzs && product.oldPriceUzs > product.priceUzs) { %>
+      <span class="badge badge-sale">Скидка</span>
+    <% } %>
+  </div>
+
+  <!-- Quick Favorite & Compare Actions -->
+  <div class="product-card-quick-actions">
+    <button 
+      class="quick-icon-btn" 
+      data-action="favorite" 
+      data-id="<%= product.id %>" 
+      data-title="<%= product.name %>"
+      title="Добавить в избранное"
+      aria-label="В избранное"
+    >
+      ❤️
+    </button>
+    <button 
+      class="quick-icon-btn" 
+      data-action="compare" 
+      data-id="<%= product.id %>" 
+      data-title="<%= product.name %>"
+      title="Добавить к сравнению"
+      aria-label="Сравнить"
+    >
+      ⚖️
+    </button>
+  </div>
+
+  <!-- Image -->
+  <a href="/product/<%= product.slug %>" class="product-card-image-wrap">
+    <img 
+      src="<%= product.images && product.images[0] ? product.images[0] : 'https://images.unsplash.com/photo-1592750475338-74b7b21085ab?w=600&auto=format&fit=crop&q=80' %>" 
+      alt="<%= product.name %>"
+      class="product-card-img"
+      loading="lazy"
+    >
+  </a>
+
+  <!-- Meta -->
+  <div class="product-card-meta">
+    <span class="product-brand"><%= product.brand %></span>
+    <span class="product-rating">★ <%= product.rating.toFixed(1) %> (<%= product.reviewsCount %>)</span>
+  </div>
+
+  <!-- Title -->
+  <h3 class="product-title">
+    <a href="/product/<%= product.slug %>"><%= product.name %></a>
+  </h3>
+
+  <!-- Stock Status -->
+  <div class="product-stock">
+    <span class="product-stock-dot"></span>
+    <span>В наличии в Ташкенте (<%= product.stock %> шт.)</span>
+  </div>
+
+  <!-- Price & Cart Button -->
+  <div class="product-price-block">
+    <div class="product-prices">
+      <span class="current-price"><%= formatUzs(product.priceUzs) %></span>
+      <% if (product.oldPriceUzs) { %>
+        <span class="oldPriceUzs old-price"><%= formatUzs(product.oldPriceUzs) %></span>
+      <% } %>
+    </div>
+    <button 
+      class="btn-add-cart" 
+      data-id="<%= product.id %>" 
+      data-title="<%= product.name %>" 
+      data-price="<%= product.priceUzs %>" 
+      data-image="<%= product.images[0] %>"
+      aria-label="Добавить в корзину"
+    >
+      <span>🛒</span>
+      <span>В корзину</span>
+    </button>
+  </div>
+</div>

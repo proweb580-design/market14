@@ -1,0 +1,20 @@
+<%- include('../partials/head') %>
+<%- include('../partials/header') %>
+
+<main class="main-content" style="display: flex; align-items: center; justify-content: center; min-height: 55vh;">
+  <div class="container" style="text-align: center; max-width: 600px; padding: 3rem 1.5rem;">
+    <div style="font-size: 5rem; font-weight: 800; line-height: 1; margin-bottom: 1rem; background: linear-gradient(135deg, var(--accent) 0%, var(--accent-cyan) 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">
+      404
+    </div>
+    <h1 style="font-size: 1.75rem; margin-bottom: 1rem;">Страница не найдена</h1>
+    <p style="margin-bottom: 2rem; color: var(--text-secondary); font-size: 1rem;">
+      К сожалению, запрашиваемая страница не существует или товар был перемещён.
+    </p>
+    <div style="display: flex; justify-content: center; gap: 1rem; flex-wrap: wrap;">
+      <a href="/" class="btn btn-primary" id="btn-404-home">На главную</a>
+      <a href="/catalog" class="btn btn-secondary" id="btn-404-catalog">В каталог товаров</a>
+    </div>
+  </div>
+</main>
+
+<%- include('../partials/footer') %>

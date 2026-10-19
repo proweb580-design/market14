@@ -1,0 +1,37 @@
+/* Favorites Page Styles */
+
+.favorites-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin: 1.5rem 0 2rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.favorites-header h1 {
+  font-size: clamp(1.5rem, 3vw, 2.25rem);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.fav-actions-group {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.btn-fav-clear {
+  color: var(--text-muted);
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  background: none;
+  border: none;
+}
+
+.btn-fav-clear:hover {
+  color: var(--danger);
+}

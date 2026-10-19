@@ -1,0 +1,194 @@
+<%- include('../partials/head', { extraCss: ['cart.css'] }) %>
+<%- include('../partials/header') %>
+
+<main class="main-content">
+  <div class="container">
+    <!-- Breadcrumbs -->
+    <nav class="breadcrumbs" aria-label="Хлебные крошки">
+      <a href="/">Главная</a>
+      <span class="breadcrumbs-sep">/</span>
+      <span class="breadcrumbs-current">Корзина</span>
+    </nav>
+
+    <!-- Page Title -->
+    <div style="margin: 1rem 0 1.5rem;">
+      <h1 style="font-size: clamp(1.5rem, 3vw, 2.25rem); font-weight: 800;">
+        Корзина покупок <span id="cart-items-counter-text" style="font-size: 1.125rem; color: var(--text-muted); font-weight: 500;"></span>
+      </h1>
+    </div>
+
+    <!-- Dynamic Cart Container -->
+    <div id="cart-view-container">
+      <!-- Loading or JS Rendered Content -->
+      <div style="text-align: center; padding: 4rem 0; color: var(--text-muted);">
+        Загрузка корзины...
+      </div>
+    </div>
+  </div>
+</main>
+
+<script>
+  let appliedPromoDiscount = 0; // percentage e.g. 5%
+
+  function formatMoney(amount) {
+    return Math.round(amount).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ') + ' сум';
+  }
+
+  function renderCart() {
+    const container = document.getElementById('cart-view-container');
+    const counterText = document.getElementById('cart-items-counter-text');
+    const cart = window.TashTech.getStored(window.TashTech.KEYS.CART_KEY);
+
+    const totalQty = cart.reduce((sum, i) => sum + (i.quantity || 1), 0);
+    if (counterText) {
+      counterText.textContent = totalQty > 0 ? `(${totalQty} шт.)` : '';
+    }
+
+    if (!cart || cart.length === 0) {
+      container.innerHTML = `
+        <div class="empty-box">
+          <div class="empty-icon">🛒</div>
+          <h2>Ваша корзина пуста</h2>
+          <p>В вашей корзине пока нет товаров. Выберите понравившиеся новинки цифровой техники в нашем каталоге.</p>
+          <a href="/catalog" class="btn btn-primary" id="btn-cart-to-catalog">Перейти в каталог</a>
+        </div>
+      `;
+      return;
+    }
+
+    // Subtotal
+    let subtotal = 0;
+    cart.forEach(item => {
+      subtotal += (item.price || 0) * (item.quantity || 1);
+    });
+
+    const discountAmount = Math.round(subtotal * (appliedPromoDiscount / 100));
+    const delivery = subtotal >= 500000 || subtotal === 0 ? 0 : 30000;
+    const grandTotal = subtotal - discountAmount + delivery;
+
+    let itemsHtml = '';
+    cart.forEach(item => {
+      const lineTotal = (item.price || 0) * (item.quantity || 1);
+      itemsHtml += `
+        <div class="cart-card" data-id="${item.id}">
+          <img src="${item.image || 'https://images.unsplash.com/photo-1592750475338-74b7b21085ab?w=300&auto=format&fit=crop&q=80'}" alt="${item.title}" class="cart-thumb">
+          <div class="cart-info">
+            <h3 class="cart-title">
+              <a href="/catalog">${item.title}</a>
+            </h3>
+            <div class="cart-unit-price">${formatMoney(item.price)} за единицу</div>
+            <div class="cart-controls-row">
+              <div class="cart-stepper">
+                <button type="button" class="cart-stepper-btn" onclick="changeItemQty('${item.id}', -1)">−</button>
+                <span class="cart-stepper-val">${item.quantity || 1}</span>
+                <button type="button" class="cart-stepper-btn" onclick="changeItemQty('${item.id}', 1)">+</button>
+              </div>
+              <div class="cart-line-total">${formatMoney(lineTotal)}</div>
+            </div>
+          </div>
+          <button type="button" class="btn-remove-item" onclick="removeCartItem('${item.id}')" title="Удалить из корзины">🗑️</button>
+        </div>
+      `;
+    });
+
+    container.innerHTML = `
+      <div class="cart-layout">
+        <!-- Left: Items -->
+        <div class="cart-items-wrapper">
+          ${itemsHtml}
+        </div>
+
+        <!-- Right: Order Summary Box -->
+        <div class="cart-summary-box">
+          <h3 class="summary-title">Детали заказа</h3>
+
+          <div class="summary-row">
+            <span>Товары (${totalQty} шт.):</span>
+            <span>${formatMoney(subtotal)}</span>
+          </div>
+
+          ${discountAmount > 0 ? `
+            <div class="summary-row" style="color: var(--success);">
+              <span>Скидка по промокоду (${appliedPromoDiscount}%):</span>
+              <span>−${formatMoney(discountAmount)}</span>
+            </div>
+          ` : ''}
+
+          <div class="summary-row">
+            <span>Доставка по Ташкенту:</span>
+            <span>${delivery === 0 ? '<strong style="color: var(--success);">Бесплатно</strong>' : formatMoney(delivery)}</span>
+          </div>
+
+          <form class="promo-form" onsubmit="applyPromo(event)">
+            <input type="text" id="promo-input" class="promo-input" placeholder="Промокод (TASHKENT2025)" value="${appliedPromoDiscount > 0 ? 'TASHKENT2025' : ''}">
+            <button type="submit" class="btn-promo-apply">Применить</button>
+          </form>
+
+          <div class="summary-row total-row">
+            <span>Итого к оплате:</span>
+            <span class="total-value">${formatMoney(grandTotal)}</span>
+          </div>
+
+          <a href="/checkout" class="btn-checkout-cta" id="btn-proceed-checkout">
+            <span>Оформить заказ</span>
+            <span>→</span>
+          </a>
+
+          <button type="button" class="cart-clear-link" onclick="clearFullCart()">Очистить корзину</button>
+        </div>
+      </div>
+    `;
+  }
+
+  function changeItemQty(id, delta) {
+    let cart = window.TashTech.getStored(window.TashTech.KEYS.CART_KEY);
+    const item = cart.find(i => i.id === id);
+    if (!item) return;
+
+    item.quantity = (item.quantity || 1) + delta;
+    if (item.quantity <= 0) {
+      cart = cart.filter(i => i.id !== id);
+    }
+
+    window.TashTech.saveStored(window.TashTech.KEYS.CART_KEY, cart);
+    window.TashTech.updateBadges();
+    renderCart();
+  }
+
+  function removeCartItem(id) {
+    let cart = window.TashTech.getStored(window.TashTech.KEYS.CART_KEY);
+    cart = cart.filter(i => i.id !== id);
+    window.TashTech.saveStored(window.TashTech.KEYS.CART_KEY, cart);
+    window.TashTech.updateBadges();
+    window.TashTech.showToast('Товар удалён из корзины');
+    renderCart();
+  }
+
+  function clearFullCart() {
+    if (!confirm('Вы уверены, что хотите очистить корзину?')) return;
+    window.TashTech.saveStored(window.TashTech.KEYS.CART_KEY, []);
+    window.TashTech.updateBadges();
+    window.TashTech.showToast('Корзина очищена');
+    renderCart();
+  }
+
+  function applyPromo(e) {
+    e.preventDefault();
+    const input = document.getElementById('promo-input');
+    const val = input ? input.value.trim().toUpperCase() : '';
+
+    if (val === 'TASHKENT2025' || val === 'TASHTECH') {
+      appliedPromoDiscount = 5;
+      window.TashTech.showToast('Промокод применён! Скидка 5%', 'success');
+      renderCart();
+    } else {
+      window.TashTech.showToast('Неверный промокод. Попробуйте TASHKENT2025', 'error');
+    }
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    renderCart();
+  });
+</script>
+
+<%- include('../partials/footer') %>

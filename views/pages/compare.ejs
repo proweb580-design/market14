@@ -1,0 +1,217 @@
+<%- include('../partials/head', { extraCss: ['compare.css'] }) %>
+<%- include('../partials/header') %>
+
+<main class="main-content">
+  <div class="container">
+    <!-- Breadcrumbs -->
+    <nav class="breadcrumbs" aria-label="Хлебные крошки">
+      <a href="/">Главная</a>
+      <span class="breadcrumbs-sep">/</span>
+      <span class="breadcrumbs-current">Сравнение товаров</span>
+    </nav>
+
+    <!-- Header & Controls -->
+    <div class="compare-header-row">
+      <div>
+        <h1>Сравнение товаров <span id="compare-count-header" style="font-size: 1.125rem; color: var(--text-muted); font-weight: 500;"></span></h1>
+      </div>
+      <div class="compare-controls" id="compare-controls-bar" style="display: none;">
+        <label class="filter-diff-toggle">
+          <input type="checkbox" id="diff-only-checkbox" onchange="toggleDiffOnly(this.checked)">
+          <span>Только различия</span>
+        </label>
+        <button type="button" class="btn btn-secondary" onclick="clearAllCompare()" style="padding: 0.375rem 0.875rem; font-size: 0.8125rem;">
+          Очистить список
+        </button>
+      </div>
+    </div>
+
+    <!-- Comparison Dynamic Table Container -->
+    <div id="compare-view-container">
+      <div style="text-align: center; padding: 4rem 0; color: var(--text-muted);">
+        Загрузка данных для сравнения...
+      </div>
+    </div>
+  </div>
+</main>
+
+<script>
+  let showOnlyDifferences = false;
+
+  function formatMoney(amount) {
+    return Math.round(amount).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ') + ' сум';
+  }
+
+  async function loadCompare() {
+    const container = document.getElementById('compare-view-container');
+    const controlsBar = document.getElementById('compare-controls-bar');
+    const countHeader = document.getElementById('compare-count-header');
+
+    const compIds = window.TashTech.getStored(window.TashTech.KEYS.COMPARE_KEY);
+
+    if (countHeader) {
+      countHeader.textContent = compIds.length > 0 ? `(${compIds.length} из 4)` : '';
+    }
+
+    if (!compIds || compIds.length === 0) {
+      if (controlsBar) controlsBar.style.display = 'none';
+      container.innerHTML = `
+        <div class="empty-box">
+          <div class="empty-icon">⚖️</div>
+          <h2>Список сравнения пуст</h2>
+          <p>Добавляйте до 4 моделей техники через кнопку весов на карточках товаров, чтобы сопоставить их характеристики и выбрать лучшую.</p>
+          <a href="/catalog" class="btn btn-primary">Перейти в каталог</a>
+        </div>
+      `;
+      return;
+    }
+
+    try {
+      const res = await fetch('/api/products?ids=' + encodeURIComponent(compIds.join(',')));
+      const data = await res.json();
+      const products = data.products || [];
+
+      if (products.length === 0) {
+        if (controlsBar) controlsBar.style.display = 'none';
+        container.innerHTML = `
+          <div class="empty-box">
+            <div class="empty-icon">⚖️</div>
+            <h2>Список сравнения пуст</h2>
+            <a href="/catalog" class="btn btn-primary">В каталог</a>
+          </div>
+        `;
+        return;
+      }
+
+      if (controlsBar) controlsBar.style.display = 'flex';
+
+      // Collect all attribute names
+      const allAttrNames = new Set();
+      products.forEach(p => {
+        if (p.attributes) {
+          p.attributes.forEach(a => allAttrNames.add(a.name));
+        }
+      });
+
+      // Build Top Header Row with Product Cards
+      let tableHtml = '<div class="compare-table-wrapper"><table class="compare-table"><thead><tr>';
+      tableHtml += '<th class="compare-attr-col">Товар</th>';
+
+      products.forEach(p => {
+        tableHtml += `
+          <th class="compare-product-col">
+            <div class="compare-card-top">
+              <button 
+                type="button" 
+                class="btn-remove-compare" 
+                onclick="removeCompareItem('${p.id}', '${p.name}')" 
+                title="Удалить из сравнения"
+              >
+                ✕
+              </button>
+              <a href="/product/${p.slug}">
+                <img src="${p.images[0]}" alt="${p.name}" class="compare-thumb">
+              </a>
+              <div class="compare-prod-title">
+                <a href="/product/${p.slug}">${p.name}</a>
+              </div>
+              <div class="compare-prod-price">${formatMoney(p.priceUzs)}</div>
+              <button 
+                type="button" 
+                class="btn btn-primary btn-compare-cart"
+                onclick="window.TashTech.addToCart('${p.id}', '${p.name}', ${p.priceUzs}, '${p.images[0]}')"
+              >
+                <span>🛒 В корзину</span>
+              </button>
+            </div>
+          </th>
+        `;
+      });
+      tableHtml += '</tr></thead><tbody>';
+
+      // Standard Rows
+      const basicRows = [
+        { label: 'Категория', getValue: p => p.categoryName },
+        { label: 'Бренд', getValue: p => p.brand },
+        { label: 'Рейтинг', getValue: p => `★ ${p.rating.toFixed(1)} (${p.reviewsCount} отзывов)` },
+        { label: 'Наличие на складе', getValue: p => p.stock > 0 ? `В наличии в Ташкенте (${p.stock} шт.)` : 'Под заказ' }
+      ];
+
+      basicRows.forEach(row => {
+        const values = products.map(p => row.getValue(p));
+        const isDiff = new Set(values).size > 1;
+
+        tableHtml += `
+          <tr class="compare-row ${isDiff ? 'row-diff' : 'row-same'}" data-diff="${isDiff}">
+            <td class="compare-attr-col">${row.label}</td>
+            ${values.map(v => `<td><strong>${v}</strong></td>`).join('')}
+          </tr>
+        `;
+      });
+
+      // Technical Attribute Rows
+      allAttrNames.forEach(attrName => {
+        const values = products.map(p => {
+          const found = p.attributes ? p.attributes.find(a => a.name === attrName) : null;
+          return found ? `${found.value}${found.unit ? ' ' + found.unit : ''}` : '—';
+        });
+
+        const isDiff = new Set(values).size > 1;
+
+        tableHtml += `
+          <tr class="compare-row ${isDiff ? 'row-diff' : 'row-same'}" data-diff="${isDiff}">
+            <td class="compare-attr-col">${attrName}</td>
+            ${values.map(v => `<td>${v}</td>`).join('')}
+          </tr>
+        `;
+      });
+
+      tableHtml += '</tbody></table></div>';
+      container.innerHTML = tableHtml;
+
+      applyDiffFilter();
+    } catch (err) {
+      console.error('Error loading compare:', err);
+      container.innerHTML = '<p style="color: var(--danger); text-align: center;">Не удалось загрузить данные для сравнения.</p>';
+    }
+  }
+
+  function toggleDiffOnly(checked) {
+    showOnlyDifferences = checked;
+    applyDiffFilter();
+  }
+
+  function applyDiffFilter() {
+    document.querySelectorAll('.compare-row').forEach(row => {
+      const isDiff = row.getAttribute('data-diff') === 'true';
+      if (showOnlyDifferences && !isDiff) {
+        row.style.display = 'none';
+      } else {
+        row.style.display = '';
+      }
+    });
+  }
+
+  function removeCompareItem(id, title) {
+    let comps = window.TashTech.getStored(window.TashTech.KEYS.COMPARE_KEY);
+    comps = comps.filter(i => i !== id);
+    window.TashTech.saveStored(window.TashTech.KEYS.COMPARE_KEY, comps);
+    window.TashTech.updateBadges();
+    window.TashTech.showToast(`«${title}» удалён из сравнения`);
+    loadCompare();
+  }
+
+  function clearAllCompare() {
+    if (!confirm('Очистить весь список сравнения?')) return;
+    window.TashTech.saveStored(window.TashTech.KEYS.COMPARE_KEY, []);
+    window.TashTech.updateBadges();
+    window.TashTech.showToast('Список сравнения очищен');
+    loadCompare();
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    loadCompare();
+  });
+</script>
+
+<%- include('../partials/footer') %>

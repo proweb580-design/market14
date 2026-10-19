@@ -1,0 +1,182 @@
+<%- include('../partials/head', { extraCss: ['favorites.css'] }) %>
+<%- include('../partials/header') %>
+
+<main class="main-content">
+  <div class="container">
+    <!-- Breadcrumbs -->
+    <nav class="breadcrumbs" aria-label="Хлебные крошки">
+      <a href="/">Главная</a>
+      <span class="breadcrumbs-sep">/</span>
+      <span class="breadcrumbs-current">Избранное</span>
+    </nav>
+
+    <!-- Header -->
+    <div class="favorites-header">
+      <div>
+        <h1>Избранные товары <span id="fav-counter-badge" style="font-size: 1.125rem; color: var(--text-muted); font-weight: 500;"></span></h1>
+      </div>
+      <div class="fav-actions-group" id="fav-header-actions" style="display: none;">
+        <button type="button" class="btn btn-secondary" onclick="moveAllFavsToCart()" style="padding: 0.5rem 1rem; font-size: 0.8125rem;">
+          🛒 Добавить всё в корзину
+        </button>
+        <button type="button" class="btn-fav-clear" onclick="clearAllFavorites()">
+          Очистить список
+        </button>
+      </div>
+    </div>
+
+    <!-- Container -->
+    <div id="favorites-container">
+      <div style="text-align: center; padding: 4rem 0; color: var(--text-muted);">
+        Загрузка избранного...
+      </div>
+    </div>
+  </div>
+</main>
+
+<script>
+  function formatMoney(amount) {
+    return Math.round(amount).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ') + ' сум';
+  }
+
+  async function loadFavorites() {
+    const container = document.getElementById('favorites-container');
+    const headerActions = document.getElementById('fav-header-actions');
+    const counterBadge = document.getElementById('fav-counter-badge');
+
+    const favIds = window.TashTech.getStored(window.TashTech.KEYS.FAV_KEY);
+
+    if (counterBadge) {
+      counterBadge.textContent = favIds.length > 0 ? `(${favIds.length})` : '';
+    }
+
+    if (!favIds || favIds.length === 0) {
+      if (headerActions) headerActions.style.display = 'none';
+      container.innerHTML = `
+        <div class="empty-box">
+          <div class="empty-icon">❤️</div>
+          <h2>В избранном пока пусто</h2>
+          <p>Сохраняйте понравившиеся товары кликом на сердечко, чтобы не потерять их и вернуться к покупке позже.</p>
+          <a href="/catalog" class="btn btn-primary">Перейти в каталог</a>
+        </div>
+      `;
+      return;
+    }
+
+    try {
+      const res = await fetch('/api/products?ids=' + encodeURIComponent(favIds.join(',')));
+      const data = await res.json();
+      const products = data.products || [];
+
+      if (products.length === 0) {
+        if (headerActions) headerActions.style.display = 'none';
+        container.innerHTML = `
+          <div class="empty-box">
+            <div class="empty-icon">❤️</div>
+            <h2>В избранном пока пусто</h2>
+            <p>Вы пока не добавили ни одного товара.</p>
+            <a href="/catalog" class="btn btn-primary">В каталог</a>
+          </div>
+        `;
+        return;
+      }
+
+      if (headerActions) headerActions.style.display = 'flex';
+
+      let gridHtml = '<div class="products-grid">';
+      products.forEach(p => {
+        gridHtml += `
+          <div class="product-card" data-product-id="${p.id}">
+            <div class="product-card-quick-actions">
+              <button 
+                class="quick-icon-btn active" 
+                onclick="removeFav('${p.id}', '${p.name}')"
+                title="Удалить из избранного"
+              >
+                ❤️
+              </button>
+            </div>
+
+            <a href="/product/${p.slug}" class="product-card-image-wrap">
+              <img src="${p.images[0]}" alt="${p.name}" class="product-card-img">
+            </a>
+
+            <div class="product-card-meta">
+              <span class="product-brand">${p.brand}</span>
+              <span class="product-rating">★ ${p.rating.toFixed(1)}</span>
+            </div>
+
+            <h3 class="product-title">
+              <a href="/product/${p.slug}">${p.name}</a>
+            </h3>
+
+            <div class="product-stock">
+              <span class="product-stock-dot"></span>
+              <span>В наличии (${p.stock} шт.)</span>
+            </div>
+
+            <div class="product-price-block">
+              <div class="product-prices">
+                <span class="current-price">${formatMoney(p.priceUzs)}</span>
+              </div>
+              <button 
+                class="btn-add-cart" 
+                data-id="${p.id}" 
+                data-title="${p.name}" 
+                data-price="${p.priceUzs}" 
+                data-image="${p.images[0]}"
+              >
+                <span>🛒</span>
+                <span>В корзину</span>
+              </button>
+            </div>
+          </div>
+        `;
+      });
+      gridHtml += '</div>';
+
+      container.innerHTML = gridHtml;
+    } catch (err) {
+      console.error('Error loading favorites:', err);
+      container.innerHTML = '<p style="color: var(--danger); text-align: center;">Не удалось загрузить избранные товары.</p>';
+    }
+  }
+
+  function removeFav(id, title) {
+    let favs = window.TashTech.getStored(window.TashTech.KEYS.FAV_KEY);
+    favs = favs.filter(i => i !== id);
+    window.TashTech.saveStored(window.TashTech.KEYS.FAV_KEY, favs);
+    window.TashTech.updateBadges();
+    window.TashTech.showToast(`«${title}» удалён из избранного`);
+    loadFavorites();
+  }
+
+  function clearAllFavorites() {
+    if (!confirm('Очистить весь список избранного?')) return;
+    window.TashTech.saveStored(window.TashTech.KEYS.FAV_KEY, []);
+    window.TashTech.updateBadges();
+    window.TashTech.showToast('Список избранного очищен');
+    loadFavorites();
+  }
+
+  async function moveAllFavsToCart() {
+    const favIds = window.TashTech.getStored(window.TashTech.KEYS.FAV_KEY);
+    if (!favIds || favIds.length === 0) return;
+
+    const res = await fetch('/api/products?ids=' + encodeURIComponent(favIds.join(',')));
+    const data = await res.json();
+    const products = data.products || [];
+
+    products.forEach(p => {
+      window.TashTech.addToCart(p.id, p.name, p.priceUzs, p.images[0]);
+    });
+
+    window.TashTech.showToast('Все товары перенесены в корзину!', 'success');
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    loadFavorites();
+  });
+</script>
+
+<%- include('../partials/footer') %>

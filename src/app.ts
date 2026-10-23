@@ -44,6 +44,7 @@ const resolvedPublicDir =
   possiblePublicDirs.find((dir) => fs.existsSync(dir)) || path.join(process.cwd(), 'public');
 
 app.use(express.static(resolvedPublicDir));
+app.use('/public', express.static(resolvedPublicDir));
 
 // Server sessions (T-070)
 app.use(

@@ -1,5 +1,6 @@
 import express, { Request, Response, NextFunction } from 'express';
 import path from 'path';
+import fs from 'fs';
 import session from 'express-session';
 import passport from './config/passport';
 import { populateUser } from './middleware/auth';
@@ -12,14 +13,36 @@ import { config } from './config/env';
 
 export const app = express();
 
-// View engine setup
-app.set('views', path.join(__dirname, '../views'));
+// Trust reverse proxy for Vercel / HTTPS cookies
+app.set('trust proxy', 1);
+
+// Robust multi-environment view path resolution
+const possibleViewsDirs = [
+  path.join(process.cwd(), 'views'),
+  path.join(__dirname, '../views'),
+  path.join(__dirname, 'views'),
+  path.resolve(__dirname, '../../views'),
+];
+const resolvedViewsDir =
+  possibleViewsDirs.find((dir) => fs.existsSync(dir)) || path.join(process.cwd(), 'views');
+
+app.set('views', resolvedViewsDir);
 app.set('view engine', 'ejs');
 
 // Middlewares
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use(express.static(path.join(__dirname, '../public')));
+
+// Robust static files directory resolution
+const possiblePublicDirs = [
+  path.join(process.cwd(), 'public'),
+  path.join(__dirname, '../public'),
+  path.join(__dirname, 'public'),
+];
+const resolvedPublicDir =
+  possiblePublicDirs.find((dir) => fs.existsSync(dir)) || path.join(process.cwd(), 'public');
+
+app.use(express.static(resolvedPublicDir));
 
 // Server sessions (T-070)
 app.use(
@@ -60,16 +83,44 @@ app.use((req: Request, res: Response) => {
   res.status(404).render('pages/404', {
     title: '404 — Страница не найдена | TashTech',
     url: req.originalUrl,
-    activeNav: ''
+    activeNav: '',
   });
 });
 
-// Global error handler
+// Global error handler with safe fallback for serverless hosting
 app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
   console.error('Unhandled server error:', err);
-  res.status(500).render('pages/500', {
-    title: '500 — Внутренняя ошибка сервера | TashTech',
-    error: config.env === 'development' ? err.message : 'Произошла непредвиденная ошибка.',
-    activeNav: ''
-  });
+  try {
+    res.status(500).render('pages/500', {
+      title: '500 — Внутренняя ошибка сервера | TashTech',
+      error: config.env === 'development' ? err.message : 'Произошла непредвиденная ошибка.',
+      activeNav: '',
+    });
+  } catch (renderError) {
+    res.status(500).send(`
+      <!DOCTYPE html>
+      <html lang="ru">
+        <head>
+          <meta charset="utf-8">
+          <title>500 — Ошибка сервера | TashTech</title>
+          <style>
+            body { background: #0B0D12; color: #F5F7FB; font-family: system-ui, -apple-system, sans-serif; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; }
+            .card { background: #131720; border: 1px solid rgba(255,255,255,0.08); padding: 2.5rem; border-radius: 16px; max-width: 500px; text-align: center; }
+            h1 { color: #FF647C; margin-top: 0; }
+            p { color: #9AA4B2; line-height: 1.6; }
+            a { display: inline-block; margin-top: 1rem; padding: 0.75rem 1.5rem; background: #7C6CFF; color: #fff; text-decoration: none; border-radius: 8px; font-weight: 600; }
+          </style>
+        </head>
+        <body>
+          <div class="card">
+            <h1>500 — Ошибка сервера</h1>
+            <p>${err?.message || 'Сервис временно недоступен.'}</p>
+            <a href="/">На главную</a>
+          </div>
+        </body>
+      </html>
+    `);
+  }
 });
+
+export default app;

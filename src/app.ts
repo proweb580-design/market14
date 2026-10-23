@@ -1,4 +1,5 @@
 import express, { Request, Response, NextFunction } from 'express';
+import 'ejs';
 import path from 'path';
 import fs from 'fs';
 import session from 'express-session';

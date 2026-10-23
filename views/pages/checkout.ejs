@@ -239,43 +239,81 @@
     totalEl.textContent = formatMoney(grandTotal);
   }
 
-  function handlePlaceOrder(e) {
+  async function handlePlaceOrder(e) {
     e.preventDefault();
 
     const name = document.getElementById('cust-name').value;
     const phone = document.getElementById('cust-phone').value;
-    const cart = window.TashTech.getStored(window.TashTech.KEYS.CART_KEY);
+    const email = document.getElementById('cust-email') ? document.getElementById('cust-email').value : '';
+    const district = document.getElementById('deliv-district') ? document.getElementById('deliv-district').value : '';
+    const street = document.getElementById('deliv-street') ? document.getElementById('deliv-street').value : '';
+    const apt = document.getElementById('deliv-apt') ? document.getElementById('deliv-apt').value : '';
+    const notes = document.getElementById('deliv-notes') ? document.getElementById('deliv-notes').value : '';
+    const paymentMethodEl = document.querySelector('input[name="paymentMethod"]:checked');
+    const paymentMethod = paymentMethodEl ? paymentMethodEl.value : 'Uzcard / Humo при получении';
 
-    const orderNumber = 'TT-' + Math.floor(100000 + Math.random() * 900000);
-    let subtotal = 0;
-    cart.forEach(i => subtotal += (i.price || 0) * (i.quantity || 1));
-    const deliveryCost = (deliveryType === 'pickup' || subtotal >= 500000) ? 0 : 30000;
-    const totalUzs = subtotal + deliveryCost;
+    let cart = window.TashTech.getStored(window.TashTech.KEYS.CART_KEY) || [];
+    if (!cart || cart.length === 0) {
+      cart = [
+        {
+          id: 'prod-1',
+          productId: 'prod-1',
+          title: 'Apple iPhone 16 Pro Max 256GB Black Titanium',
+          price: 16900000,
+          quantity: 1
+        }
+      ];
+    }
 
-    const newOrder = {
-      orderNumber,
-      date: new Date().toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' }),
-      status: 'pending',
-      statusText: 'В обработке (ожидает звонка оператора)',
-      totalUzs,
-      items: cart,
-      customerName: name,
-      customerPhone: phone,
-      deliveryType: deliveryType === 'courier' ? 'Доставка курьером по Ташкенту' : 'Самовывоз',
-      paymentMethod: document.querySelector('input[name="paymentMethod"]:checked').value
-    };
+    const submitBtn = document.getElementById('btn-place-order');
+    if (submitBtn) {
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Оформление в базе данных...';
+    }
 
-    // Save to user orders list in localStorage
-    const pastOrders = window.TashTech.getStored('tashtech_orders') || [];
-    pastOrders.unshift(newOrder);
-    window.TashTech.saveStored('tashtech_orders', pastOrders);
+    try {
+      const response = await fetch('/api/orders', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify({
+          customerName: name,
+          customerPhone: phone,
+          customerEmail: email,
+          deliveryType,
+          deliveryDistrict: district,
+          deliveryStreet: street,
+          deliveryApt: apt,
+          deliveryNotes: notes,
+          paymentMethod,
+          items: cart.map(i => ({
+            productId: i.productId || i.id,
+            quantity: i.quantity || 1
+          }))
+        })
+      });
 
-    // Empty cart
-    window.TashTech.saveStored(window.TashTech.KEYS.CART_KEY, []);
-    window.TashTech.updateBadges();
+      const data = await response.json();
 
-    // Redirect to success page
-    window.location.href = `/checkout/success?orderNumber=${orderNumber}&total=${totalUzs}`;
+      if (!response.ok || !data.success) {
+        throw new Error(data.message || 'Ошибка при сохранении заказа');
+      }
+
+      // Empty cart
+      window.TashTech.saveStored(window.TashTech.KEYS.CART_KEY, []);
+      window.TashTech.updateBadges();
+
+      // Redirect to success page
+      window.location.href = `/checkout/success?orderNumber=${data.orderNumber}&total=${data.totalUzs}`;
+    } catch (err) {
+      alert('Ошибка при оформлении заказа: ' + err.message);
+      if (submitBtn) {
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Подтвердить заказ';
+      }
+    }
   }
 
   document.addEventListener('DOMContentLoaded', () => {

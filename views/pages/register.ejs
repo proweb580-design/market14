@@ -9,8 +9,14 @@
         <p>Быстрая регистрация для отслеживания заказов</p>
       </div>
 
-      <!-- Google OAuth Button -->
-      <a href="/account" class="btn-social-oauth">
+      <% if (typeof error !== 'undefined' && error) { %>
+        <div style="background: rgba(255, 100, 124, 0.15); border: 1px solid var(--danger); border-radius: var(--radius-sm); padding: 0.75rem 1rem; margin-bottom: 1.25rem; color: #ff8a9c; font-size: 0.875rem;">
+          ⚠️ <%= error %>
+        </div>
+      <% } %>
+
+      <!-- Google OAuth Button (T-071) -->
+      <a href="/auth/google" class="btn-social-oauth" id="btn-google-register">
         <svg width="18" height="18" viewBox="0 0 24 24">
           <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.665-5.17 3.665-9.17z"/>
           <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.25v3.15C3.26 21.36 7.33 24 12 24z"/>
@@ -24,25 +30,27 @@
         <span>или заполните форму</span>
       </div>
 
-      <form action="/register" method="POST">
+      <form action="/register" method="POST" id="register-form">
+        <input type="hidden" name="guestCart" id="register-guest-cart" value="">
+
         <div class="form-group">
           <label class="form-label" for="reg-name">Ваше имя и фамилия</label>
-          <input type="text" id="reg-name" name="name" class="form-input" placeholder="Азиз Каримов" required>
+          <input type="text" id="reg-name" name="name" class="form-input" placeholder="Азиз Каримов" required value="<%= typeof savedName !== 'undefined' && savedName ? savedName : '' %>">
         </div>
 
         <div class="form-group">
           <label class="form-label" for="reg-email">Email адрес</label>
-          <input type="email" id="reg-email" name="email" class="form-input" placeholder="name@example.uz" required>
+          <input type="email" id="reg-email" name="email" class="form-input" placeholder="name@example.uz" required value="<%= typeof savedEmail !== 'undefined' && savedEmail ? savedEmail : '' %>">
         </div>
 
         <div class="form-group">
           <label class="form-label" for="reg-phone">Номер телефона (Узбекистан)</label>
-          <input type="tel" id="reg-phone" name="phone" class="form-input" placeholder="+998 (90) 123-45-67" required>
+          <input type="tel" id="reg-phone" name="phone" class="form-input" placeholder="+998 (90) 123-45-67" required value="<%= typeof savedPhone !== 'undefined' && savedPhone ? savedPhone : '' %>">
         </div>
 
         <div class="form-group">
           <label class="form-label" for="reg-pass">Придумайте пароль</label>
-          <input type="password" id="reg-pass" name="password" class="form-input" placeholder="Минимум 8 символов" required>
+          <input type="password" id="reg-pass" name="password" class="form-input" placeholder="Минимум 6 символов" required minlength="6">
         </div>
 
         <button type="submit" class="btn-auth-submit" id="btn-submit-register">
@@ -56,5 +64,15 @@
     </div>
   </div>
 </main>
+
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    const cart = window.TashTech?.getStored(window.TashTech?.KEYS?.CART_KEY) || [];
+    const input = document.getElementById('register-guest-cart');
+    if (input && cart.length > 0) {
+      input.value = JSON.stringify(cart);
+    }
+  });
+</script>
 
 <%- include('../partials/footer') %>

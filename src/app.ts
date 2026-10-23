@@ -1,5 +1,8 @@
 import express, { Request, Response, NextFunction } from 'express';
 import path from 'path';
+import session from 'express-session';
+import passport from './config/passport';
+import { populateUser } from './middleware/auth';
 import { homeRouter } from './routes/home.routes';
 import { catalogRouter } from './routes/catalog.routes';
 import { shopRouter } from './routes/shop.routes';
@@ -17,6 +20,25 @@ app.set('view engine', 'ejs');
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, '../public')));
+
+// Server sessions (T-070)
+app.use(
+  session({
+    secret: process.env.SESSION_SECRET || 'tashtech_session_secret_2026',
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+      httpOnly: true,
+      sameSite: 'lax',
+      secure: process.env.NODE_ENV === 'production',
+    },
+  })
+);
+
+app.use(passport.initialize());
+app.use(passport.session());
+app.use(populateUser);
 
 // Global locals for templates
 app.use((req: Request, res: Response, next: NextFunction) => {

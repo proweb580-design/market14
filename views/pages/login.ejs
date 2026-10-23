@@ -9,13 +9,19 @@
         <p>Управляйте своими заказами, корзиной и скидками</p>
       </div>
 
-      <!-- Quick 1-click Demo Login -->
-      <a href="/account" class="btn-demo-quick-login" id="btn-quick-demo-login">
-        <span>⚡ Войти в демо-аккаунт в 1 клик</span>
-      </a>
+      <% if (typeof error !== 'undefined' && error) { %>
+        <div style="background: rgba(255, 100, 124, 0.15); border: 1px solid var(--danger); border-radius: var(--radius-sm); padding: 0.75rem 1rem; margin-bottom: 1.25rem; color: #ff8a9c; font-size: 0.875rem;">
+          ⚠️ <%= error %>
+        </div>
+      <% } %>
 
-      <!-- Google OAuth Button -->
-      <a href="/account" class="btn-social-oauth" style="margin-top: 0.75rem;">
+      <!-- Quick 1-click Demo Login -->
+      <button type="button" class="btn-demo-quick-login" id="btn-quick-demo-login" onclick="submitDemoLogin()">
+        <span>⚡ Войти в демо-аккаунт в 1 клик</span>
+      </button>
+
+      <!-- Google OAuth Button (T-071) -->
+      <a href="/auth/google" class="btn-social-oauth" style="margin-top: 0.75rem;" id="btn-google-oauth">
         <svg width="18" height="18" viewBox="0 0 24 24">
           <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.665-5.17 3.665-9.17z"/>
           <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.25v3.15C3.26 21.36 7.33 24 12 24z"/>
@@ -29,10 +35,13 @@
         <span>или по email</span>
       </div>
 
-      <form action="/login" method="POST">
+      <form action="/login" method="POST" id="login-form">
+        <input type="hidden" name="redirectUrl" value="<%= typeof redirectUrl !== 'undefined' ? redirectUrl : '/account' %>">
+        <input type="hidden" name="guestCart" id="login-guest-cart" value="">
+
         <div class="form-group">
           <label class="form-label" for="login-email">Email адрес</label>
-          <input type="email" id="login-email" name="email" class="form-input" placeholder="name@example.uz" required value="aziz.karimov@example.uz">
+          <input type="email" id="login-email" name="email" class="form-input" placeholder="name@example.uz" required value="<%= typeof savedEmail !== 'undefined' && savedEmail ? savedEmail : 'aziz.karimov@example.uz' %>">
         </div>
 
         <div class="form-group">
@@ -51,5 +60,22 @@
     </div>
   </div>
 </main>
+
+<script>
+  // Attach guest cart so server can merge guest cart into DB user cart
+  document.addEventListener('DOMContentLoaded', () => {
+    const cart = window.TashTech?.getStored(window.TashTech?.KEYS?.CART_KEY) || [];
+    const input = document.getElementById('login-guest-cart');
+    if (input && cart.length > 0) {
+      input.value = JSON.stringify(cart);
+    }
+  });
+
+  function submitDemoLogin() {
+    document.getElementById('login-email').value = 'aziz.karimov@example.uz';
+    document.getElementById('login-pass').value = 'password123';
+    document.getElementById('login-form').submit();
+  }
+</script>
 
 <%- include('../partials/footer') %>

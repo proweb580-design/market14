@@ -9,7 +9,7 @@
 - Prisma ORM и миграции.
 - Серверные сессии, bcrypt для паролей, Passport Google OAuth 2.0.
 - Zod для серверной валидации.
-- YooMoney — только после проверки официальной документации конкретного продукта.
+- Stripe Checkout (тестовый режим) для онлайн-оплаты, подтверждение через подписанный webhook.
 - Vitest и Supertest для тестирования.
 - Git и GitHub.
 
@@ -64,13 +64,13 @@ tech-store/
 | POST | `/api/favorites/:productId` | Изменить избранное |
 | POST | `/api/compare` | Изменить сравнение |
 | GET/POST | `/checkout` | Оформление заказа |
-| POST | `/payments/yoomoney/create` | Создать тестовый платёж |
-| POST | `/payments/yoomoney/notify` | Обработать уведомление, если поддерживается выбранным API |
-| GET | `/payment/result` | Показать статус, перепроверенный сервером |
+| POST | `/api/orders` (`paymentMethod=online`) | Создать заказ `pending_payment` и Stripe Checkout Session, вернуть `checkoutUrl` |
+| POST | `/payments/stripe/webhook` | Webhook Stripe: проверка подписи `Stripe-Signature`, события `checkout.session.*` |
+| GET | `/payment/result?session_id=cs_...` | Показать статус, перепроверенный сервером через Stripe API |
 | GET | `/account` | Личный кабинет |
 | GET | `/account/orders` | Заказы текущего пользователя |
 
-Платёжные endpoints уточнить по официальной документации. Нельзя принимать `?success=true` или аналогичный параметр браузера за доказательство оплаты.
+Webhook принимает сырое тело запроса (подключается до `express.json()`). Нельзя принимать `?success=true` или аналогичный параметр браузера за доказательство оплаты.
 
 ## 4. Модели данных
 
@@ -122,10 +122,11 @@ SESSION_SECRET=
 GOOGLE_CLIENT_ID=
 GOOGLE_CLIENT_SECRET=
 GOOGLE_CALLBACK_URL=http://localhost:3000/auth/google/callback
-YOOMONEY_MODE=test
-YOOMONEY_SHOP_ID=
-YOOMONEY_SECRET_KEY=
-BASE_URL=http://localhost:3000
+STRIPE_SECRET_KEY=sk_test_...
+STRIPE_WEBHOOK_SECRET=whsec_...
+STRIPE_CURRENCY=usd
+STRIPE_UZS_RATE=12700
+APP_BASE_URL=http://localhost:3000
 ```
 Реальные значения добавлять только в локальный `.env` или защищённые настройки хостинга. `.env` должен быть в `.gitignore`. Не логировать пароли, токены и платёжные секреты. В production использовать HTTPS, безопасные cookies, rate limiting, серверную валидацию и общую обработку ошибок.
 

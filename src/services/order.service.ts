@@ -1,5 +1,29 @@
 import { prisma, hasValidDatabaseUrl } from '../db/prisma';
 import { MOCK_PRODUCTS } from '../data/mockProducts';
+import { calculateDeliveryUzs } from './pricing';
+
+export type OrderStatus =
+  | 'pending'
+  | 'pending_payment'
+  | 'paid'
+  | 'payment_failed'
+  | 'cancelled'
+  | 'refunded'
+  | 'delivered';
+
+const ORDER_STATUS_TEXT: Record<string, string> = {
+  pending: 'В обработке (ожидает звонка оператора)',
+  pending_payment: 'Ожидает оплаты',
+  paid: 'Оплачен',
+  payment_failed: 'Оплата не прошла',
+  cancelled: 'Отменён',
+  refunded: 'Возврат средств',
+  delivered: 'Доставлен',
+};
+
+export function getOrderStatusText(status: string): string {
+  return ORDER_STATUS_TEXT[status] || 'В обработке';
+}
 
 export interface OrderItemInput {
   productId: string;
@@ -17,6 +41,7 @@ export interface CreateOrderParams {
   deliveryApt?: string;
   deliveryNotes?: string;
   paymentMethod: string;
+  status?: OrderStatus;
   items: OrderItemInput[];
 }
 
@@ -106,6 +131,7 @@ export async function createOrder(params: CreateOrderParams): Promise<OrderView>
     deliveryApt,
     deliveryNotes,
     paymentMethod,
+    status = 'pending',
     items,
   } = params;
 
@@ -167,7 +193,7 @@ export async function createOrder(params: CreateOrderParams): Promise<OrderView>
           });
         }
 
-        const deliveryUzs = deliveryType === 'pickup' || subtotalUzs >= 500000 ? 0 : 30000;
+        const deliveryUzs = calculateDeliveryUzs(subtotalUzs, deliveryType);
         const totalUzs = subtotalUzs + deliveryUzs;
 
         // Create Order
@@ -175,7 +201,7 @@ export async function createOrder(params: CreateOrderParams): Promise<OrderView>
           data: {
             userId: userId || null,
             orderNumber,
-            status: 'pending',
+            status,
             currency: 'UZS',
             subtotalUzs,
             deliveryUzs,
@@ -217,7 +243,7 @@ export async function createOrder(params: CreateOrderParams): Promise<OrderView>
             year: 'numeric',
           }),
           status: createdOrder.status,
-          statusText: 'В обработке (ожидает звонка оператора)',
+          statusText: getOrderStatusText(createdOrder.status),
           subtotalUzs: createdOrder.subtotalUzs,
           deliveryUzs: createdOrder.deliveryUzs,
           totalUzs: createdOrder.totalUzs,
@@ -243,6 +269,11 @@ export async function createOrder(params: CreateOrderParams): Promise<OrderView>
     }
   }
 
+  // Online payment needs a persisted order: never fall back to the in-memory demo store
+  if (status === 'pending_payment') {
+    throw new Error('Онлайн-оплата временно недоступна: база данных не подключена');
+  }
+
   // Fallback in-memory order creation
   let subtotalUzs = 0;
   const itemsView: OrderItemView[] = [];
@@ -263,15 +294,15 @@ export async function createOrder(params: CreateOrderParams): Promise<OrderView>
     });
   }
 
-  const deliveryUzs = deliveryType === 'pickup' || subtotalUzs >= 500000 ? 0 : 30000;
+  const deliveryUzs = calculateDeliveryUzs(subtotalUzs, deliveryType);
   const totalUzs = subtotalUzs + deliveryUzs;
 
   const fallbackOrder: OrderView = {
     id: 'ord-' + Date.now(),
     orderNumber,
     date: new Date().toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' }),
-    status: 'pending',
-    statusText: 'В обработке (ожидает звонка оператора)',
+    status,
+    statusText: getOrderStatusText(status),
     subtotalUzs,
     deliveryUzs,
     totalUzs,
@@ -316,12 +347,7 @@ export async function getUserOrders(userId?: string): Promise<OrderView[]> {
             year: 'numeric',
           }),
           status: o.status,
-          statusText:
-            o.status === 'delivered'
-              ? 'Доставлен'
-              : o.status === 'paid'
-              ? 'Оплачен'
-              : 'В обработке',
+          statusText: getOrderStatusText(o.status),
           subtotalUzs: o.subtotalUzs,
           deliveryUzs: o.deliveryUzs,
           totalUzs: o.totalUzs,
@@ -385,12 +411,7 @@ export async function getOrderById(orderId: string, currentUserId?: string): Pro
           year: 'numeric',
         }),
         status: order.status,
-        statusText:
-          order.status === 'delivered'
-            ? 'Доставлен'
-            : order.status === 'paid'
-            ? 'Оплачен'
-            : 'В обработке',
+        statusText: getOrderStatusText(order.status),
         subtotalUzs: order.subtotalUzs,
         deliveryUzs: order.deliveryUzs,
         totalUzs: order.totalUzs,

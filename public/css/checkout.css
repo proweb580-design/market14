@@ -202,3 +202,23 @@
   border-radius: var(--radius-full);
   margin-bottom: 1.5rem;
 }
+
+/* Payment result states (Stage 8, Stripe) */
+.order-success-icon.is-failed {
+  background: var(--danger-bg);
+  border-color: var(--danger);
+  box-shadow: 0 0 30px rgba(255, 100, 124, 0.3);
+}
+
+.order-success-icon.is-pending {
+  background: rgba(245, 166, 35, 0.14);
+  border-color: var(--warning);
+  box-shadow: 0 0 30px rgba(245, 166, 35, 0.25);
+}
+
+.payment-test-note {
+  font-size: 0.8125rem;
+  color: var(--text-muted);
+  margin-top: 1.5rem;
+  line-height: 1.5;
+}

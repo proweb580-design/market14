@@ -1,6 +1,11 @@
 import { Router, Request, Response } from 'express';
 import { formatUzs } from '../data/mockProducts';
 import { createOrder, getOrderById } from '../services/order.service';
+import { createCheckoutSession, isStripeConfigured } from '../services/payment.service';
+
+function getBaseUrl(req: Request): string {
+  return (process.env.APP_BASE_URL || `${req.protocol}://${req.get('host')}`).replace(/\/$/, '');
+}
 
 export const checkoutRouter = Router();
 
@@ -40,6 +45,11 @@ checkoutRouter.post(['/checkout', '/api/orders'], async (req: Request, res: Resp
       });
     }
 
+    const isOnlinePayment = paymentMethod === 'online';
+    if (isOnlinePayment && !isStripeConfigured()) {
+      throw new Error('Онлайн-оплата временно недоступна — выберите оплату при получении');
+    }
+
     const order = await createOrder({
       userId: req.session.user?.id,
       customerName: customerName || req.session.user?.name || 'Покупатель',
@@ -50,12 +60,32 @@ checkoutRouter.post(['/checkout', '/api/orders'], async (req: Request, res: Resp
       deliveryStreet,
       deliveryApt,
       deliveryNotes,
-      paymentMethod,
+      paymentMethod: isOnlinePayment ? 'Онлайн картой (Stripe, тестовый режим)' : paymentMethod,
+      status: isOnlinePayment ? 'pending_payment' : 'pending',
       items: parsedItems.map((i: any) => ({
         productId: i.productId || i.id,
         quantity: parseInt(i.quantity || '1', 10),
       })),
     });
+
+    // Online payment: send the buyer to Stripe Checkout (T-081)
+    if (isOnlinePayment) {
+      const checkoutUrl = await createCheckoutSession(
+        order,
+        getBaseUrl(req),
+        customerEmail || req.session.user?.email
+      );
+
+      if (req.xhr || req.headers.accept?.includes('application/json')) {
+        return res.json({
+          success: true,
+          orderNumber: order.orderNumber,
+          totalUzs: order.totalUzs,
+          checkoutUrl,
+        });
+      }
+      return res.redirect(303, checkoutUrl);
+    }
 
     // If client requested JSON (AJAX / fetch)
     if (req.xhr || req.headers.accept?.includes('application/json')) {

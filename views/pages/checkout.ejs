@@ -131,8 +131,8 @@
               <label class="choice-card-label">
                 <input type="radio" name="paymentMethod" value="online" class="choice-card-input">
                 <div class="choice-card-content">
-                  <div class="choice-card-title">Онлайн картой (Тестовый режим)</div>
-                  <div class="choice-card-desc">Тестовая оплата через защищенный платёжный шлюз.</div>
+                  <div class="choice-card-title">Онлайн картой — Stripe (тестовый режим)</div>
+                  <div class="choice-card-desc">Переход на защищённую страницу Stripe. Реальные деньги не списываются: используйте тестовую карту 4242 4242 4242 4242.</div>
                 </div>
               </label>
             </div>
@@ -265,10 +265,11 @@
       ];
     }
 
-    const submitBtn = document.getElementById('btn-place-order');
+    const submitBtn = document.getElementById('btn-submit-order');
+    const submitBtnHtml = submitBtn ? submitBtn.innerHTML : '';
     if (submitBtn) {
       submitBtn.disabled = true;
-      submitBtn.textContent = 'Оформление в базе данных...';
+      submitBtn.textContent = paymentMethod === 'online' ? 'Переход к оплате...' : 'Оформление в базе данных...';
     }
 
     try {
@@ -305,13 +306,19 @@
       window.TashTech.saveStored(window.TashTech.KEYS.CART_KEY, []);
       window.TashTech.updateBadges();
 
+      // Online payment: continue on Stripe Checkout, the result page re-checks status on the server
+      if (data.checkoutUrl) {
+        window.location.href = data.checkoutUrl;
+        return;
+      }
+
       // Redirect to success page
       window.location.href = `/checkout/success?orderNumber=${data.orderNumber}&total=${data.totalUzs}`;
     } catch (err) {
       alert('Ошибка при оформлении заказа: ' + err.message);
       if (submitBtn) {
         submitBtn.disabled = false;
-        submitBtn.textContent = 'Подтвердить заказ';
+        submitBtn.innerHTML = submitBtnHtml;
       }
     }
   }

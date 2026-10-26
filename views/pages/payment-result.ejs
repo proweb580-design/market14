@@ -1,0 +1,73 @@
+<%- include('../partials/head', { extraCss: ['checkout.css'] }) %>
+<%- include('../partials/header') %>
+
+<%
+  const isPaid = outcome === 'paid';
+  const isFailed = outcome === 'failed';
+  const isPending = outcome === 'pending';
+  const iconClass = isPaid ? '' : (isFailed || outcome === 'unknown') ? 'is-failed' : 'is-pending';
+  const icon = isPaid ? '✓' : isPending ? '⏳' : '✕';
+  let heading = 'Не удалось проверить оплату';
+  let message = 'Ссылка на результат оплаты недействительна или сервис оплаты временно недоступен. Проверьте статус заказа в личном кабинете.';
+  if (isPaid) {
+    heading = 'Оплата прошла успешно!';
+    message = 'Платёж подтверждён сервером Stripe. Заказ оплачен и передан в службу доставки TashTech.';
+  } else if (isPending && cancelled) {
+    heading = 'Оплата не завершена';
+    message = 'Вы вернулись со страницы оплаты. Заказ сохранён и ожидает оплаты — можно вернуться к ней, пока ссылка действует.';
+  } else if (isPending) {
+    heading = 'Платёж обрабатывается';
+    message = 'Stripe ещё не подтвердил оплату. Статус обновится автоматически — обновите страницу через минуту.';
+  } else if (isFailed) {
+    heading = 'Оплата не прошла';
+    message = 'Время на оплату истекло или платёж отклонён. Товары возвращены на склад — оформите заказ заново.';
+  }
+%>
+
+<main class="main-content">
+  <div class="container">
+    <div class="order-success-box">
+      <div class="order-success-icon <%= iconClass %>"><%= icon %></div>
+
+      <h1 style="font-size: clamp(1.75rem, 3.5vw, 2.5rem); font-weight: 800; margin-bottom: 0.75rem;">
+        <%= heading %>
+      </h1>
+
+      <p style="font-size: 1.0625rem; color: var(--text-secondary); margin-bottom: 1.5rem; line-height: 1.6;">
+        <%= message %>
+      </p>
+
+      <% if (order) { %>
+        <div class="order-badge-number">
+          Номер заказа: <span style="color: #fff;"><%= order.orderNumber %></span>
+        </div>
+
+        <div style="background: var(--surface-raised); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 1.25rem; text-align: left; margin-bottom: 2rem; font-size: 0.875rem; line-height: 1.8;">
+          <div><strong>📍 Статус заказа:</strong> <%= order.statusText %></div>
+          <div><strong>💰 Сумма:</strong> <%= formatUzs(order.totalUzs) %></div>
+          <div><strong>🚚 Адрес:</strong> <%= order.deliveryAddress %></div>
+        </div>
+      <% } %>
+
+      <div style="display: flex; justify-content: center; gap: 1rem; flex-wrap: wrap;">
+        <% if (retryUrl) { %>
+          <a href="<%= retryUrl %>" class="btn btn-primary" id="btn-payment-retry">
+            <span>💳 Вернуться к оплате</span>
+          </a>
+        <% } %>
+        <a href="/account" class="btn <%= retryUrl ? 'btn-secondary' : 'btn-primary' %>" id="btn-payment-to-orders">
+          <span>📦 Мои заказы</span>
+        </a>
+        <a href="/catalog" class="btn btn-secondary" id="btn-payment-to-catalog">
+          <span>Продолжить покупки</span>
+        </a>
+      </div>
+
+      <p class="payment-test-note">
+        🧪 Тестовый режим Stripe: реальные деньги не списываются.
+      </p>
+    </div>
+  </div>
+</main>
+
+<%- include('../partials/footer') %>

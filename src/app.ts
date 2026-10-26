@@ -10,6 +10,7 @@ import { catalogRouter } from './routes/catalog.routes';
 import { shopRouter } from './routes/shop.routes';
 import { checkoutRouter } from './routes/checkout.routes';
 import { authRouter } from './routes/auth.routes';
+import { paymentRouter, paymentWebhookRouter } from './routes/payment.routes';
 import { config } from './config/env';
 
 export const app = express();
@@ -29,6 +30,9 @@ const resolvedViewsDir =
 
 app.set('views', resolvedViewsDir);
 app.set('view engine', 'ejs');
+
+// Stripe webhook needs the raw body, so it goes before the JSON parser (T-081)
+app.use('/', paymentWebhookRouter);
 
 // Middlewares
 app.use(express.json());
@@ -78,6 +82,7 @@ app.use('/', homeRouter);
 app.use('/', catalogRouter);
 app.use('/', shopRouter);
 app.use('/', checkoutRouter);
+app.use('/', paymentRouter);
 app.use('/', authRouter);
 
 // 404 handler
